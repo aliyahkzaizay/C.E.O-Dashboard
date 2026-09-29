@@ -4,7 +4,9 @@ A dashboard for organization membership, events, attendance, engagement, and bas
 
 ## Current Status
 
-The React + TypeScript + Vite starter is installed, along with React Router and the Supabase client. Feature pages, authentication, and database integration are not implemented yet. The starter runs without Supabase credentials.
+The React + TypeScript + Vite starter is installed, along with React Router and the Supabase client. A shared Supabase browser client is available in `src/lib/supabase.ts`. Feature pages, login flows, and database tables are not implemented yet. The starter runs without Supabase credentials.
+
+**New teammate? Start with the [simple setup guide](docs/team-setup.md).**
 
 ## Local Setup
 
@@ -32,7 +34,7 @@ Keep your checkout outside iCloud-managed Desktop and Documents folders, for exa
 
    Replace the placeholders with the shared development project's URL and publishable key. These belong to the same Supabase project. The template is committed; `.env.local` is ignored. Do not overwrite an existing configured `.env.local` when updating your checkout.
 
-   Any variable beginning with `VITE_` is browser-visible. Never use a Supabase secret/service-role key or Google OAuth secret here. Adding these values prepares configuration; it does not implement the database connection.
+   Any variable beginning with `VITE_` is browser-visible. Never use a Supabase secret/service-role key or Google OAuth secret here. The client initializes when valid configuration is present. The development starter displays missing configuration; a configured client alone does not verify network access or database permissions.
 
 5. Start the app:
 
@@ -68,3 +70,11 @@ The initial scaffold and setup may go directly on `main`. Subsequent tasks use b
 
 - [Development workflow: branches, commits, and pull requests](CONTRIBUTING.md)
 - [Sprint 1 Deliverables](docs/sprint-1-deliverables.md)
+
+## Using Supabase in Features
+
+Import `getSupabase` from `src/lib/supabase.ts` and call it when a feature needs database or authentication access. It returns the shared client, or throws a clear setup error if configuration is missing. Do not create a new client for every component.
+
+This setup uses the current `sb_publishable_` key format. Add the project URL and publishable key to your ignored `.env.local`, then restart Vite. No tables are assumed and no database records are created by the starter. Before adding real data, implement and test organization-specific Row Level Security policies. Database types can be generated after the schema is established.
+
+Reference: [Supabase JavaScript client initialization](https://supabase.com/docs/reference/javascript/initializing).

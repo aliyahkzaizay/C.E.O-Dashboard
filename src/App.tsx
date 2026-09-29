@@ -3,6 +3,7 @@ import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
+import { supabaseConfigError } from './lib/supabase'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -17,6 +18,11 @@ function App() {
         </div>
         <div>
           <h1>Get started</h1>
+          {import.meta.env.DEV && (
+            <p role="status">
+              {supabaseConfigError ?? 'Supabase client configured. Live access has not been verified.'}
+            </p>
+          )}
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
           </p>
