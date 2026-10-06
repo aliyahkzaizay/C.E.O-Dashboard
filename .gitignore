@@ -27,4 +27,14 @@ dist-ssr
 .env
 .env.*
 !.env.example
-.netlify
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Deployment metadata
+.vercel/

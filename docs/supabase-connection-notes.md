@@ -40,11 +40,11 @@ This endpoint is read-only because its job is to return settings, not modify the
 
 1. Open the C.E.O. project in VS Code.
 2. Choose **Terminal → New Terminal**.
-3. Make sure the terminal is in the folder containing `package.json` and your configured `.env.local`.
+3. Make sure the terminal is at the repository root; your configured environment file is `frontend/.env.local`.
 4. On macOS, paste this entire command into the terminal and press **Enter**:
 
 ```bash
-node --env-file=.env.local --input-type=module -e '
+node --env-file=frontend/.env.local --input-type=module -e '
 const url = process.env.VITE_SUPABASE_URL;
 const key = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
@@ -62,7 +62,7 @@ This is a terminal command, not code to paste into a React component. It uses th
 
 ### What the code does
 
-- `--env-file=.env.local` reads the project URL and publishable key from your local file.
+- `--env-file=frontend/.env.local` reads the project URL and publishable key from your local file.
 - `--input-type=module` allows this JavaScript command to use `await`.
 - `-e` tells Node to execute the JavaScript that follows.
 - `fetch(...)` sends the request to Supabase.
@@ -70,7 +70,7 @@ This is a terminal command, not code to paste into a React component. It uses th
 - `AbortSignal.timeout(15000)` stops waiting after 15 seconds.
 - `console.log(...)` prints the result without printing the key.
 
-Use the **publishable key**, never a secret/service-role key or database password. Keep actual values in `.env.local`, not in these notes.
+Use the **publishable key**, never a secret/service-role key or database password. Keep actual values in `frontend/.env.local`, not in these notes.
 
 ## Expected result
 
@@ -104,6 +104,6 @@ The starter message **“Supabase client configured”** only means the app acce
 
 - **401/403:** check that the URL and publishable key belong to the same project and were copied correctly.
 - **Network error or timeout:** check your connection, project availability, and whether your execution environment allows network requests. A failed request does not automatically mean the key is wrong.
-- **Missing `.env.local`:** follow the [teammate setup guide](team-setup.md).
+- **Missing `frontend/.env.local`:** follow the [teammate setup guide](team-setup.md).
 
 Do not share passwords or secret keys when asking for help.

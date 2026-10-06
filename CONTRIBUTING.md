@@ -5,17 +5,17 @@ This guide defines how the team names branches, tracks work, reviews changes, an
 ## Current Project Decisions
 
 - React, TypeScript, and Vite for the frontend; Supabase for authentication and PostgreSQL data storage.
-- Supabase Edge Functions for private integration logic. A separate Python/FastAPI backend is not part of the current plan.
-- Retrieve attendance responses directly from Google Forms; Google Sheets is not required.
+- Python 3.13/FastAPI backend in `backend/`; React frontend in `frontend/`; reviewed SQL migrations in `supabase/migrations/`.
+- Native C.E.O. check-in with a stable link, downloadable QR PNG, and officer open/close controls. Google integration is deferred.
 - Basic manual finance tracking is included in the MVP.
-- Netlify hosts the frontend, GitHub holds code and reviews, and Jira tracks tasks and sprints.
+- Vercel is the planned host for the frontend and Python backend; development stays local until deployment. GitHub holds code and reviews, and Jira tracks tasks and sprints.
 - Integrate small frontend/backend workflows early instead of waiting until the backend is complete.
 
-See [Sprint 1 Deliverables](docs/sprint-1-deliverables.md) for scope and the schedule. Older planning notes are background, not the current requirements. The active-member definition still needs team agreement.
+See [Sprint 1 Deliverables](docs/sprint-1-deliverables.md) for scope and the schedule. Older planning notes are background, not the current requirements. Metric definitions are recorded in [Architecture](docs/architecture.md).
 
 ## Start With a Jira Task
 
-Before starting work, choose or create a Jira task with an owner and clear acceptance criteria. Acceptance criteria describe observable results, such as “syncing the same form twice creates no duplicate attendance.”
+Before starting work, choose or create a Jira task with an owner and clear acceptance criteria. Acceptance criteria describe observable results, such as “submitting check-in twice creates no duplicate attendance.”
 
 Use **To Do → In Progress → In Review → Done**. Keep technical discussion and code review on the pull request; link it from Jira so the task and implementation can be found together.
 
@@ -36,7 +36,7 @@ Use lowercase, hyphen-separated descriptions and preserve the uppercase Jira iss
 | `feat` | New functionality | `feat/CEO-12-add-member-form` |
 | `fix` | Correct a defect | `fix/CEO-24-prevent-duplicate-attendance` |
 | `docs` | Documentation | `docs/CEO-5-local-setup-guide` |
-| `chore` | Tooling, configuration, or dependencies | `chore/CEO-8-configure-netlify` |
+| `chore` | Tooling, configuration, or dependencies | `chore/CEO-8-configure-vercel` |
 | `refactor` | Restructure code without changing behavior | `refactor/CEO-31-extract-member-validation` |
 | `test` | Add or improve tests | `test/CEO-35-finance-balance-cases` |
 
@@ -129,6 +129,7 @@ Reviewers should check the acceptance criteria, understandable code, relevant ed
 ## Checks Before Merging
 
 - Run `npm run lint`, `npm run typecheck`, and `npm run build` for application changes, plus relevant tests once configured.
+- Run `python -m pytest` from `backend/` in its virtual environment for backend changes.
 - Verify the affected user flow, including error and empty states where relevant.
 - For database or permission changes, verify that one organization cannot access another organization's records.
 - For UI changes, inspect the page at desktop and mobile widths.
@@ -140,10 +141,10 @@ Documentation-only changes need a content and link review rather than an applica
 
 - Coordinate shared schema changes before implementing them. Keep database changes in reviewed SQL migrations, not only in the Supabase dashboard.
 - Do not edit a migration already applied to a shared environment; add a new migration.
-- Commit `package-lock.json` with dependency changes. Teammates use `npm ci` to install the recorded versions.
+- Commit `package-lock.json` with dependency changes. Teammates use `npm --prefix frontend ci` to install the recorded versions.
 - Keep local environment values in ignored files and commit only placeholder examples.
 - Never commit passwords, private API keys, Google authorization tokens, or real member/financial data. Use synthetic fixtures.
-- Supabase publishable configuration can be used by the frontend; Supabase secret keys and Google integration secrets belong only on the server.
+- Supabase publishable configuration can be used by the frontend; Supabase secret keys and other private credentials belong only on the server.
 - A frontend deployment and a database migration are separate changes; document and coordinate any required rollout order in the PR.
 
 ## Merge and Finish
