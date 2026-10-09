@@ -164,6 +164,8 @@ Jacob reviews the attendance dashboard and recorded financial balance. He search
 
 ## Project Schedule
 
+Sprint 4 has a [shared agreement and five teammate work guides](sprints/sprint-4/README.md). That package separates prerequisite carryover, Sprint 4 targets, and later import/analytics/finance work; Jira sprint commitments require team estimates.
+
 The revised schedule integrates frontend and backend work early rather than postponing integration until November. Sprint dates and course release milestones are retained. Activities below describe planned work rather than completed results.
 
 | Sprint | Dates | Planned work and milestone |

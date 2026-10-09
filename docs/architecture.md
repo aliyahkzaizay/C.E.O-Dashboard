@@ -1,6 +1,6 @@
 # Architecture and MVP decisions
 
-Updated October 6, 2026. This document records agreed direction and proposed implementation boundaries. It does not claim the product schema, check-in, or deployment already exists. The repository now includes the folder split, Tailwind integration, and a Python health API.
+Updated October 9, 2026. This document records the accepted architecture; the Sprint 4 universal agreements are the current working API/schema baseline. It does not claim the product schema, check-in, or deployment already exists. The repository now includes the folder split, Tailwind integration, and a Python health API.
 
 ## Chosen stack and development boundary
 
@@ -59,7 +59,7 @@ These are responsibilities and key constraints, not a finalized SQL schema.
 | Table | Responsibility and rules |
 | --- | --- |
 | organizations | Name, identifier matching method/label, currency, engagement percentage threshold, and reporting period dates. |
-| organization_users | Officer Auth user → organization access and role. Unique user/organization pair; access rules and invitation process still need agreement. |
+| organization_users | Officer Auth user → organization access and role. Unique user/organization pair; owner/admin access follows the Sprint 4 baseline; invitation and ownership-transfer implementation still need design. |
 | members | Internally generated member ID, organization ID, optional external ID, name, email, club role, join date, membership status. External IDs are text and unique within an organization when present. Email matching requires an agreed normalization and uniqueness rule. Club role is distinct from application access role. |
 | events | Organization, name, start date/time, type, description, lifecycle status, public check-in token, open/closed state, and attendance finalization timestamp. |
 | check_in_submissions | Event/organization, submitted identifier and necessary review details, received time, matching/review state, and optional matched member. Access restricted to authorized officers. |
@@ -103,3 +103,7 @@ These are proposed backlog items, not Jira issues already created. Review existi
 | Prepare Vercel deployment later | After local integration, configure frontend/Python deployment and verify auth, API, check-in, QR links, and finance on deployed URLs. |
 
 Time estimates have not been validated. Prioritize a small working local flow; do not treat rough conversational estimates as sprint commitments.
+
+## Sprint 4 ownership and contracts
+
+See the [Sprint 4 planning package](sprints/sprint-4/README.md) for universal agreements, five teammate guides, Jira-ready acceptance criteria, and explicit cross-team dependencies. The project owner accepted the API/schema recommendations on October 9, 2026. Follow the universal agreements now and revise shared docs when decisions change. Explicitly unspecified implementation details remain with their assigned owners. The repo scaffold is complete; older setup entries above are planning history, not new Sprint 4 work.
