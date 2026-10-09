@@ -13,7 +13,7 @@ Database schemas describe stored tables and constraints. API schemas describe ac
 | Record | Shared foundation |
 | --- | --- |
 | organizations | organization_id, organization_name, matching_method, member_identifier_label, reporting_timezone, engagement threshold/period, currency |
-| organization_users | organization_id, user_id (Supabase Auth), access_role |
+| organization_users | organization_id, user_id (Supabase Auth), access_role, can_edit_finances (boolean; default false for non-owners) |
 | members | member_id, organization_id, name, email, external_member_id, date_joined, membership_status; club role if needed |
 | events | event_id, organization_id, event_name, starts_at, event_type, description, status, archived_at, check_in_token, check_in_open, attendance_finalized_at |
 | check_in_submissions | submission_id, organization_id, event_id, submitted identifier, necessary review details, received_at, review status, matched_member_id when resolved |
@@ -69,12 +69,20 @@ Roles:
 | Actor | Access |
 | --- | --- |
 | Owner | Organization settings, officer access, and organization records |
-| Admin | Members, events, attendance, and basic finance within their organization |
+| Admin | Manage members/events/attendance and view finances; financial writes require can_edit_finances |
 | Public attendee | Minimal event metadata and submission through a valid open check-in link only |
 
 Validate the Auth identity, organization membership, permitted role, and target record's organization on every officer operation. Client-provided IDs are not authorization. Never grant access merely because an account knows an organization ID. Organization creation must establish its initial owner safely; prevent removal of the last owner. Invitation/join flow and ownership transfer still need design.
 
 Use database policies and constraints as well as API checks. Privileged Supabase credentials can bypass Row Level Security, so a server using them must enforce every boundary explicitly. No credentials in frontend code except intended public Supabase configuration. No real records in tests.
+
+### Finance permission
+
+All authorized officers may read finance data in their own organization. A financial write requires `access_role = owner` or `can_edit_finances = true`. Only the organization's Owner may grant/revoke that flag. Enforce this in the backend and database access policies as applicable; hiding buttons is not access control. Reject self-granted flags through ordinary profile/member edits.
+
+The Owner grants access to the president and treasurer and any additional selected officers. Club title is separate from permission. Default non-owner access is read-only. Teammate 1 (Aliyah) owns the permission field/checks; Teammate 3 uses them on all finance operations. Revoked access must be checked again on subsequent requests.
+
+Planned budgeting remains a later design item, not part of the current table/API contract. All officers should be able to view it when built; its fields and workflow are not yet specified.
 
 ## History and lifecycle
 

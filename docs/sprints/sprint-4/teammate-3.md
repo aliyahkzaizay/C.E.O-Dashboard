@@ -16,6 +16,8 @@ Start with event creation and event fields. Then provide the check-in link and o
 - Only authorized officers change event settings. Teammate 4 checks these settings when accepting submissions.
 - Keep event history and its attendance/finance links instead of deleting them.
 - For finance, use exact money values, one currency, same-club event links, and voids with a reason.
+- All officers can view finance data. Every write requires Owner access or can_edit_finances from Aliyah’s access checks; only the Owner manages that permission.
+- Planned budgets are a later design topic, not an extra Sprint 4 task.
 
 ## Work with
 
@@ -138,10 +140,11 @@ Agree opening-balance storage, then implement manual entries, categories, option
 Done when
 - [ ] Exact amounts and currency rules enforced; opening balance is not counted as period income.
 - [ ] Voids retain reason/actor/time and are excluded from totals; optional event belongs to the same organization.
-- [ ] Opening/effective dates, reporting totals, and unauthorized access have meaningful tests.
+- [ ] Opening/effective dates and reporting totals have meaningful tests.
+- [ ] An ordinary officer can view finances but cannot change them; an Owner or permitted officer can. Revoking finance-edit permission prevents later writes.
 
 Depends on / coordinate with
-T1 organization/access API agreement; shared finance design review.
+Aliyah’s organization/access checks, including can_edit_finances; shared finance design review.
 
 Shared rules
 Follow docs/sprints/sprint-4/universal-agreements.md.

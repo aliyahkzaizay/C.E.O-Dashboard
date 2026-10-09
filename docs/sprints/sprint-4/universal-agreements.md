@@ -26,8 +26,16 @@ React handles the screens. Python/FastAPI handles requests and rules. Supabase s
 ## Who can do what?
 
 - **Owner:** manage club settings, officer access, and all club records. A club must keep at least one owner.
-- **Admin:** manage members, events, attendance, and basic finance within their club.
+- **Admin:** manage members, events, and attendance; view finances within their club. Financial changes need separate permission.
 - **Attendee:** view the public form and submit check-in while it is open.
+
+### Finance access — updated October 9
+
+All authorized club officers can view the finance dashboard and transaction history. The Owner can edit finances and grant/revoke **can_edit_finances** for other officers. It defaults to false for non-owners. Grant it to the president and treasurer, plus anyone else the Owner chooses; titles do not automatically grant access.
+
+The backend checks this before any financial change, including opening-balance changes, new entries, edits, and voids. Ordinary officers cannot grant themselves access. This replaces the earlier rule allowing all Admins to edit finances.
+
+**Budget planning: decide later.** Viewing a planned budget is intended for all officers once that feature exists. Budget amounts, categories, and editing workflow are not defined yet and are not added to Sprint 4. A recorded balance is not a planned budget.
 
 ## Check-in rules
 

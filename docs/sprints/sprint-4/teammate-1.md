@@ -1,18 +1,34 @@
-# Teammate 1 — Members, organizations, and officer access
-
+# Aliyah (Teammate 1) — Members, organizations, and officer access
+c
 [Team rules](universal-agreements.md) · [API/data reference](api-data-reference.md) · [Sprint plan](README.md)
 
-**Assignee:** add name in Jira. **Epic:** Authentication/Organizations; Members. Follow the accepted October 9 agreements.
+**Assignee:** Aliyah. **Epic:** Authentication/Organizations; Members. Follow the accepted October 9 agreements.
 
 ## Start here
 
 Start with officer login and club access. Then build add/view/edit/search/archive members.
+
+## First working milestone
+
+An officer can sighow to run n in, create a club, add a member, and see that member. Another club cannot access the record.
+
+Build in this order:
+
+1. Inspect existing Supabase tables and Auth settings without changing them. Share organization/member fields and example responses early so others can start.
+2. Add officer sign-up, login, and logout using Supabase Auth. Let Supabase manage passwords.
+3. Create organizations and organization_users through reviewed migrations; safely make the club creator its Owner.
+4. Add backend checks for signed-in identity, club membership, role, and finance-edit permission. Test with two separate clubs.
+5. Add manual member creation, roster listing, and single-member view. Then add editing, search, and archiving.
+
+You own access permissions, not the finance screens. Coordinate that handoff with Teammate 3. No application or database changes are made by this plan.
 
 ## Your responsibilities and rules
 
 - Own organizations, organization_users, and members: database fields, API models, and basic officer screens.
 - Keep login accounts separate from roster members. A club role such as Treasurer does not grant app access.
 - Only authorized officers can use club records. A club must keep an owner.
+- All officers can view finances. Only the Owner or an officer with can_edit_finances can change them. Only the Owner grants/revokes this permission; it defaults to false for other officers.
+- The Owner grants this permission to the president, treasurer, and anyone else selected. A job title alone never grants access.
 - Enforce duplicate IDs in the database, including simultaneous requests. Preserve leading zeros.
 - Archive and restore members; keep attendance history.
 - Share input-cleaning, member-creation, access checks, and error handling so others reuse them.
@@ -36,7 +52,7 @@ The S4 labels identify these docs, not actual Jira issues. After creating ticket
 | Jira field | Value |
 | --- | --- |
 | Issue type | Task |
-| Assignee | Teammate 1 — select actual person |
+| Assignee | Aliyah — select her Jira account |
 | Epic / parent | Authentication/Organizations — select the matching existing epic |
 | Sprint | Sprint 4 — confirm capacity during planning |
 | Status | To Do |
@@ -56,7 +72,8 @@ Inspect the remote schema, write reviewable migrations for organizations and org
 Done when
 - [ ] Organization creation establishes one owner safely; access is never granted by knowing an ID.
 - [ ] Valid login and organization permissions are checked; fake users in two organizations cannot read/write each other’s records.
-- [ ] Owner/admin behavior and last-owner protection follow the reviewed policy; errors use the shared format.
+- [ ] Owner/admin behavior and last-owner protection follow the shared rules; errors use the shared format.
+- [ ] All authorized officers can read finances; changes require Owner access or can_edit_finances. Only the Owner can grant/revoke it; an officer cannot grant it to themselves or gain it by changing their title.
 
 Depends on / coordinate with
 Accepted universal agreements; Supabase development access.
@@ -77,7 +94,7 @@ Planning reference: S4-T1-A
 | Jira field | Value |
 | --- | --- |
 | Issue type | Task |
-| Assignee | Teammate 1 — select actual person |
+| Assignee | Aliyah — select her Jira account |
 | Epic / parent | Members — select the matching existing epic |
 | Sprint | Sprint 4 — confirm capacity during planning |
 | Status | To Do |
@@ -118,7 +135,7 @@ Planning reference: S4-T1-B
 | Jira field | Value |
 | --- | --- |
 | Issue type | Task |
-| Assignee | Teammate 1 — select actual person |
+| Assignee | Aliyah — select her Jira account |
 | Epic / parent | Setup — select the matching existing epic |
 | Sprint | Sprint 4 — confirm capacity during planning |
 | Status | To Do |

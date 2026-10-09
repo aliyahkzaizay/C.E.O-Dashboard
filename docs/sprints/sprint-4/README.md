@@ -12,7 +12,7 @@
 
 | Person | Owns | Guide |
 | --- | --- | --- |
-| Teammate 1 | Members, organizations, officer access | [Start here](teammate-1.md) |
+| Aliyah (Teammate 1) | Members, organizations, officer access | [Start here](teammate-1.md) |
 | Teammate 2 | CSV/XLSX import, then analytics | [Start here](teammate-2.md) |
 | Teammate 3 | Events, then basic finance | [Start here](teammate-3.md) |
 | Teammate 4 | Attendance processing, unmatched review, backend check-in protection | [Start here](teammate-4.md) |

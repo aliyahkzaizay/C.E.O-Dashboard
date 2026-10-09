@@ -59,7 +59,7 @@ These are responsibilities and key constraints, not a finalized SQL schema.
 | Table | Responsibility and rules |
 | --- | --- |
 | organizations | Name, identifier matching method/label, currency, engagement percentage threshold, and reporting period dates. |
-| organization_users | Officer Auth user → organization access and role. Unique user/organization pair; owner/admin access follows the Sprint 4 baseline; invitation and ownership-transfer implementation still need design. |
+| organization_users | Officer Auth user → organization access and role. Unique user/organization pair; can_edit_finances defaults to false for non-owners; owner/admin access follows the Sprint 4 baseline; invitation and ownership-transfer implementation still need design. |
 | members | Internally generated member ID, organization ID, optional external ID, name, email, club role, join date, membership status. External IDs are text and unique within an organization when present. Email matching requires an agreed normalization and uniqueness rule. Club role is distinct from application access role. |
 | events | Organization, name, start date/time, type, description, lifecycle status, public check-in token, open/closed state, and attendance finalization timestamp. |
 | check_in_submissions | Event/organization, submitted identifier and necessary review details, received time, matching/review state, and optional matched member. Access restricted to authorized officers. |
@@ -81,9 +81,13 @@ A roster member does not require a login. One person may have separate roster re
 
 ## Basic finance MVP
 
-Support one currency per organization, an opening balance with effective date, manual income/expense entries, categories, description, optional event association, transaction history, and summary totals. Use exact decimal amounts or integer minor units, never floating-point money. Display the recorded balance based on the opening balance and subsequent non-voided entries; period income/expense totals exclude opening balance. Preserve corrections through void reason, actor, and timestamp rather than deleting history. Confirm opening-balance storage, date boundaries, and finance permissions before SQL implementation.
+Support one currency per organization, an opening balance with effective date, manual income/expense entries, categories, description, optional event association, transaction history, and summary totals. Use exact decimal amounts or integer minor units, never floating-point money. Display the recorded balance based on the opening balance and subsequent non-voided entries; period income/expense totals exclude opening balance. Preserve corrections through void reason, actor, and timestamp rather than deleting history. Confirm opening-balance storage and date boundaries before SQL implementation. All authorized officers can read finances. Writes require Owner access or the owner-granted can_edit_finances permission; only the Owner grants/revokes it. President/treasurer titles do not automatically grant permissions.
 
 Bank connections, payment processing, and automated accounting are deferred. The displayed balance is based on entered records, not a verified bank balance.
+
+Planned budgeting is a later design item: all officers should be able to view it when implemented, but budget fields and workflow are not yet defined or committed to Sprint 4. The recorded balance and a planned spending budget are different concepts.
+
+Aliyah owns Teammate 1 work: members, organizations, officer login/access, and shared finance-permission checks. See her [starting plan](sprints/sprint-4/teammate-1.md).
 
 ## Implementation sequence and Jira preparation
 
