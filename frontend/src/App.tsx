@@ -1,11 +1,12 @@
 import { getSupabase } from "./lib/supabase";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
+import Dashboard from "./pages/Dashboard";
 import "./App.css";
 
 /**
- * Displays the C.E.O. account screen with sign-up and sign-in views.
+ * Displays the dashboard when signed in, or the account form when signed out.
  * Keeps the selected view and entered form values in React state.
  *
  * @returns The account screen's JSX.
@@ -20,6 +21,30 @@ function App() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [session, setSession] = useState<Session | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  /**
+   * Keeps the screen in sync with Supabase's initial session and auth changes.
+   * Returns cleanup that removes the listener when the component is removed.
+   */
+  useEffect(() => {
+    try {
+      const { data } = getSupabase().auth.onAuthStateChange(
+        (_event, currentSession) => {
+          setSession(currentSession);
+          setIsCheckingSession(false);
+        }
+      );
+
+      return () => data.subscription.unsubscribe();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to load your session."
+      );
+      setIsCheckingSession(false);
+    }
+  }, []);
+
 
   /**
    * Sends the form values to Supabase to create an account or sign in.
@@ -84,6 +109,50 @@ function App() {
     }
   }
 
+  /**
+   * Signs out the current browser session and clears the form.
+   * The auth listener updates session state to show the sign-in view.
+   *
+   * @returns A promise that finishes when sign-out is handled.
+   */
+  async function handleSignOut() {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const { error: authError } = await getSupabase().auth.signOut({
+        scope: "local",
+      });
+      if (authError) throw authError;
+
+      setFullName("");
+      setEmail("");
+      setPassword("");
+      setIsSignUp(false);
+      setMessage("You have signed out.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to sign out. Try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (!isCheckingSession && session) {
+    return (
+      <Dashboard
+        email={session.user.email ?? ""}
+        onSignOut={handleSignOut}
+        isSigningOut={isLoading}
+        error={error}
+      />
+    );
+  }
+
   return (
     <main className="auth-page">
       <section className="brand-panel">
@@ -104,77 +173,83 @@ function App() {
 
       <section className="form-panel">
         <div className="form-content">
-          <h2>{isSignUp ? "Create an Account" : "Sign in"}</h2>
-          <p className="form-description">
-            {isSignUp
-              ? "Create an account and get started managing your club smarter."
-              : "Welcome back to C.E.O."}
-          </p>
+          {isCheckingSession ? (
+            <p role="status">Loading your account…</p>
+          ) : (
+            <>
+              <h2>{isSignUp ? "Create an Account" : "Sign in"}</h2>
+              <p className="form-description">
+                {isSignUp
+                  ? "Create an account and get started managing your club smarter."
+                  : "Welcome back to C.E.O."}
+              </p>
 
-          <form onSubmit={handleSubmit}>
-            {isSignUp && (
-              <label>
-                <span className="sr-only">Full Name</span>
-                <input
-                  name="fullName"
-                  placeholder="Full Name"
-                  autoComplete="name"
-                  required
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                />
-              </label>
-            )}
+              <form onSubmit={handleSubmit}>
+                {isSignUp && (
+                  <label>
+                    <span className="sr-only">Full Name</span>
+                    <input
+                      name="fullName"
+                      placeholder="Full Name"
+                      autoComplete="name"
+                      required
+                      value={fullName}
+                      onChange={(event) => setFullName(event.target.value)}
+                    />
+                  </label>
+                )}
 
-            <label>
-              <span className="sr-only">Email</span>
-              <input
-                name="email"
-                type="email"
-                placeholder="Email"
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-              />
-            </label>
+                <label>
+                  <span className="sr-only">Email</span>
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="Email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                  />
+                </label>
 
-            <label>
-              <span className="sr-only">Password</span>
-              <input
-                key={isSignUp ? "new-password" : "current-password"}
-                name="password"
-                type="password"
-                placeholder="Password"
-                autoComplete={isSignUp ? "new-password" : "current-password"}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-              />
-            </label>
+                <label>
+                  <span className="sr-only">Password</span>
+                  <input
+                    key={isSignUp ? "new-password" : "current-password"}
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                  />
+                </label>
 
-            {error && <p role="alert">{error}</p>}
-            {message && <p role="status">{message}</p>}
+                {error && <p role="alert">{error}</p>}
+                {message && <p role="status">{message}</p>}
 
-            <button
-              className="submit-button"
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Please wait…" : isSignUp ? "Sign up" : "Sign in"}
-            </button>
-          </form>
+                <button
+                  className="submit-button"
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Please wait…" : isSignUp ? "Sign up" : "Sign in"}
+                </button>
+              </form>
 
-          <button
-            className="switch-button"
-            type="button"
-            disabled={isLoading}
-            onClick={() => setIsSignUp(!isSignUp)}
-          >
-            {isSignUp
-              ? "Already have an account? Sign in"
-              : "New to C.E.O.? Create an account"}
-          </button>
+              <button
+                className="switch-button"
+                type="button"
+                disabled={isLoading}
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "New to C.E.O.? Create an account"}
+              </button>
+            </>
+          )}
         </div>
       </section>
     </main>

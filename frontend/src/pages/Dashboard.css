@@ -1,0 +1,21 @@
+/* Welcome area stays neutral until actual club access is loaded. */
+.dashboard-welcome {
+  margin-top: 32px;
+  padding: clamp(24px, 4vw, 48px);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+}
+
+.dashboard-welcome h2 {
+  margin-bottom: 12px;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.7px;
+}
+
+.dashboard-welcome p {
+  color: #64748b;
+  line-height: 1.6;
+}
+
