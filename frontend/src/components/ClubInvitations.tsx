@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { getSupabase } from "../lib/supabase";
-import { invitationLink, requestError } from "../lib/invitations";
+import { requestError } from "../lib/invitations";
 
 type Invitation = {
   invitation_id: string;
@@ -39,7 +39,7 @@ export default function ClubInvitations({ organizationId, organizationName }: Cl
       try {
         const { data, error: rpcError } = await getSupabase().rpc("list_organization_invitations", { p_organization_id: organizationId });
         if (rpcError) throw rpcError;
-        if (active) setInvitations(data ?? []);
+        if (active) setInvitations((data ?? []).filter((invitation: Invitation) => !invitation.revoked_at));
       } catch (err) { if (active) setListError(requestError(err)); }
       finally { if (active) setLoading(false); }
     }
@@ -49,7 +49,7 @@ export default function ClubInvitations({ organizationId, organizationName }: Cl
 
   function refresh() { setLoading(true); setListError(""); setVersion(value => value + 1); }
 
-  /** Generates a link but does not send email or change officer access. */
+  /** Creates an owner-authorized invitation and attempts email; always retains its link. */
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (inFlight.current) return;
@@ -57,13 +57,23 @@ export default function ClubInvitations({ organizationId, organizationName }: Cl
     setBusy(true); setError(""); setNotice(""); setGenerated(null);
     try {
       const recipient = email.trim().toLowerCase();
-      const { data, error: rpcError } = await getSupabase().rpc("create_organization_invitation", { p_organization_id: organizationId, p_email: recipient });
-      if (rpcError) throw rpcError;
-      const result = data?.[0];
-      if (!result || !/^[0-9a-f]{64}$/.test(result.invitation_token)) throw new Error("The invitation response was incomplete. Refresh the invitation list before trying again.");
-      setGenerated({ id: result.invitation_id, link: invitationLink(result.invitation_token), email: recipient, expires: result.expires_at });
+      const { data: sessionData, error: sessionError } = await getSupabase().auth.getSession();
+      if (sessionError) throw sessionError;
+      if (!sessionData.session) throw new Error("Sign in to create an invitation.");
+      const response = await fetch("/api/invitations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({ organization_id: organizationId, email: recipient }),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(typeof result?.detail === "string" ? result.detail : "Couldn't create the invitation. Check that the backend is running.");
+      if (!result?.invitation_id || typeof result.link !== "string" || typeof result.email_sent !== "boolean") throw new Error("The invitation response was incomplete. Refresh the invitation list before trying again.");
+      setGenerated({ id: result.invitation_id, link: result.link, email: result.email, expires: result.expires_at });
       setEmail("");
-      setNotice("Invitation created. Copy the link and send it to the officer.");
+      setNotice(result.email_sent ? "Invitation sent." : "Invitation created. Copy the invite link to share.");
       refresh();
     } catch (err) { setError(requestError(err)); }
     finally { inFlight.current = false; setBusy(false); }
@@ -77,6 +87,7 @@ export default function ClubInvitations({ organizationId, organizationName }: Cl
       const { error: rpcError } = await getSupabase().rpc("revoke_organization_invitation", { p_invitation_id: id });
       if (rpcError) throw rpcError;
       if (generated?.id === id) setGenerated(null);
+      setInvitations(current => current.filter(invitation => invitation.invitation_id !== id));
       setNotice("Invitation cancelled.");
       refresh();
     } catch (err) { setError(requestError(err)); }
@@ -107,7 +118,7 @@ export default function ClubInvitations({ organizationId, organizationName }: Cl
         <div className="invitation-link-box">
           <label htmlFor="generated-invite">Invitation for {generated.email}</label>
           <input id="generated-invite" readOnly value={generated.link} onFocus={event => event.target.select()} />
-          <button type="button" onClick={copy}>Copy link</button>
+          <button type="button" onClick={copy}>Copy invite link</button>
           <p>Expires {new Date(generated.expires).toLocaleString()}. Copy this link before leaving this screen.</p>
         </div>
       )}
@@ -121,13 +132,13 @@ export default function ClubInvitations({ organizationId, organizationName }: Cl
         <ul className="invitation-list">
           {invitations.map(invitation => (
             <li key={invitation.invitation_id}>
-              <div><strong>{invitation.invited_email}</strong><p>{status(invitation)} · Expires {new Date(invitation.expires_at).toLocaleDateString()}</p></div>
+              <div><strong>{invitation.invited_email}</strong><p className="invitation-status-line"><span className={`invitation-status invitation-status-${status(invitation).toLowerCase()}`}>{status(invitation)}</span><span>{invitation.accepted_at ? `Accepted ${new Date(invitation.accepted_at).toLocaleDateString()}` : `Expires ${new Date(invitation.expires_at).toLocaleDateString()}`}</span></p></div>
               {status(invitation) === "Pending" && <button type="button" disabled={busy} onClick={() => cancel(invitation.invitation_id)} aria-label={`Cancel invitation for ${invitation.invited_email}`}>Cancel invitation</button>}
             </li>
           ))}
         </ul>
       )}
-      <p className="invitation-footnote">Showing up to 100 recent invitations. Cancelling a link does not remove an officer who already joined.</p>
+      <p className="invitation-footnote">Showing non-cancelled invitations from the latest 100. Cancelling a link does not remove an officer who already joined.</p>
     </section>
   );
 }

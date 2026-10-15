@@ -15,7 +15,7 @@ export type ClubSelectorProps = {
   activeView: "home" | "create" | "join" | "settings";
 };
 
-/** Shared club selector and navigation. Home is the only available page for now. */
+/** Shared club selector and navigation. Home and Settings are available to every signed-in user. */
 export default function Sidebar({
   clubs, selectedClubId, onSelectClub, clubsLoading, clubsError, onRetryClubs, onCreateClub, onJoinClub, onHome, onSettings, activeView,
 }: ClubSelectorProps) {
@@ -120,11 +120,9 @@ export default function Sidebar({
               Finance <span>Coming soon</span>
             </button>
           </nav>
-          {selectedClub?.access_role === "owner" && (
             <button className={`nav-item club-settings-button ${activeView === "settings" ? "nav-item-active" : ""}`} type="button" onClick={onSettings} aria-current={activeView === "settings" ? "page" : undefined}>
-              Club settings
+              Settings
             </button>
-          )}
         </aside>
   );
 }

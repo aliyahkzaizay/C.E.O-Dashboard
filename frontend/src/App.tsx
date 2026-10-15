@@ -172,6 +172,8 @@ function App() {
         pendingInvitation={pendingInvitation}
         onClearInvitation={clearPendingInvitation}
         userId={session.user.id}
+        fullName={typeof session.user.user_metadata.full_name === "string" ? session.user.user_metadata.full_name : ""}
+        accountCreatedAt={session.user.created_at}
         email={session.user.email ?? ""}
         onSignOut={handleSignOut}
         isSigningOut={isLoading}
