@@ -29,3 +29,23 @@ button,
 input {
   font-family: inherit;
 }
+
+/* Use a pointing hand for available actions throughout the app. */
+button:enabled,
+a[href],
+select:enabled,
+summary,
+[role="button"]:not([aria-disabled="true"]),
+input[type="button"]:enabled,
+input[type="submit"]:enabled,
+input[type="reset"]:enabled,
+input[type="checkbox"]:enabled,
+input[type="radio"]:enabled {
+  cursor: pointer;
+}
+
+/* Disabled controls stay visibly unavailable, even inside styled panels. */
+html body :is(button, input, select, textarea):disabled,
+html body [aria-disabled="true"] {
+  cursor: not-allowed;
+}

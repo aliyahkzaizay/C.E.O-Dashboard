@@ -1,3 +1,4 @@
+import { clearInvitationFromUrl, readPendingInvitation, rememberInvitation } from "./lib/invitations";
 import { getSupabase } from "./lib/supabase";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
@@ -12,6 +13,7 @@ import "./App.css";
  * @returns The account screen's JSX.
  */
 function App() {
+  const [pendingInvitation, setPendingInvitation] = useState(readPendingInvitation);
   const [isSignUp, setIsSignUp] = useState(true);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,6 +24,27 @@ function App() {
   const [message, setMessage] = useState("");
   const [session, setSession] = useState<Session | null>(null);
   const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  /** Saves an incoming link in this tab while the recipient signs in. */
+  useEffect(() => {
+    function captureInvitation() {
+      const token = readPendingInvitation();
+      if (token) {
+        rememberInvitation(token);
+        setPendingInvitation(token);
+        clearInvitationFromUrl();
+      }
+    }
+    captureInvitation();
+    window.addEventListener("hashchange", captureInvitation);
+    return () => window.removeEventListener("hashchange", captureInvitation);
+  }, []);
+
+  function clearPendingInvitation() {
+    rememberInvitation("");
+    clearInvitationFromUrl();
+    setPendingInvitation("");
+  }
 
   /**
    * Keeps the screen in sync with Supabase's initial session and auth changes.
@@ -145,6 +168,10 @@ function App() {
   if (!isCheckingSession && session) {
     return (
       <Dashboard
+        key={session.user.id}
+        pendingInvitation={pendingInvitation}
+        onClearInvitation={clearPendingInvitation}
+        userId={session.user.id}
         email={session.user.email ?? ""}
         onSignOut={handleSignOut}
         isSigningOut={isLoading}
@@ -184,6 +211,7 @@ function App() {
                   : "Welcome back to C.E.O."}
               </p>
 
+              {pendingInvitation && <p role="status">You have a club invitation. Sign in or create an account with the invited email to continue.</p>}
               <form onSubmit={handleSubmit}>
                 {isSignUp && (
                   <label>

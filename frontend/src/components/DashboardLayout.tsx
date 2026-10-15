@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import Sidebar from "./Sidebar";
+import type { ClubSelectorProps } from "./Sidebar";
 import "./DashboardLayout.css";
 
 type DashboardLayoutProps = {
+  clubSelector: ClubSelectorProps;
   title: string;
   email: string;
   onSignOut: () => Promise<void>;
@@ -17,7 +19,7 @@ type DashboardLayoutProps = {
  * @returns The shared layout surrounding the current page's content.
  */
 export default function DashboardLayout({
-  title, email, onSignOut, isSigningOut, children,
+  title, email, onSignOut, isSigningOut, children, clubSelector,
 }: DashboardLayoutProps) {
     const [now, setNow] = useState(() => new Date());
 
@@ -38,7 +40,7 @@ export default function DashboardLayout({
   
   return (
     <main className="dashboard-page">
-      <Sidebar />
+      <Sidebar {...clubSelector} />
       <div className="dashboard-content">
 <header>
             <div className="dashboard-heading">
@@ -59,7 +61,9 @@ export default function DashboardLayout({
               </button>
             </div>
           </header>
-        {children}
+        <div className="dashboard-view" key={clubSelector.activeView}>
+          {children}
+        </div>
       </div>
     </main>
   );

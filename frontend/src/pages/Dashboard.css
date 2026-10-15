@@ -19,3 +19,47 @@
   line-height: 1.6;
 }
 
+
+/* Club actions remain visible while their forms are being built. */
+.welcome-club-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.welcome-club-actions button, .club-retry {
+  padding: 12px 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: white;
+  color: #334155;
+  font-size: 14px;
+}
+.welcome-club-actions small { display: block; margin-top: 4px; color: #64748b; }
+.club-retry { margin-top: 16px; cursor: pointer; }
+
+/* Club settings use visible labels and a compact, single-column form. */
+.create-club-form { max-width: 480px; margin-top: 28px; }
+.create-club-form fieldset { display: flex; flex-direction: column; gap: 12px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.create-club-form label { margin-top: 8px; font-size: 14px; font-weight: 600; }
+.create-club-form input, .create-club-form select {
+  width: 100%; min-height: 48px; padding: 12px; border: 1px solid #cbd5e1;
+  border-radius: 8px; background: white; color: #0f172a; font: inherit;
+}
+.create-club-form select:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+.create-club-form #identifier-help { font-size: 13px; }
+.create-club-actions { display: flex; gap: 12px; margin-top: 16px; }
+.create-club-actions button { min-height: 44px; padding: 10px 20px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; cursor: pointer; }
+.create-club-actions button[type="submit"] { background: #2563eb; border-color: #2563eb; color: white; }
+.create-club-form fieldset:disabled { opacity: 0.65; }
+.welcome-club-actions button:not(:disabled) { background: #2563eb; border-color: #2563eb; color: white; cursor: pointer; }
+
+/* Invitation controls and readable status rows on desktop and mobile. */
+.invitation-link-box { margin-top: 24px; padding: 20px; border: 1px solid #bfdbfe; border-radius: 12px; background: #eff6ff; }
+.invitation-link-box label { display: block; margin-bottom: 10px; overflow-wrap: anywhere; font-weight: 600; }
+.invitation-link-box input { width: 100%; min-height: 44px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; font-size: 14px; }
+.invitations-panel button:not(.create-club-actions button) { min-height: 40px; padding: 8px 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; color: #334155; cursor: pointer; }
+.invitation-link-box button { margin: 12px 0; }
+.invitation-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 36px 0 16px; }
+.invitation-list-heading h3 { font-size: 18px; font-weight: 600; }
+.invitation-list { list-style: none; padding: 0; margin: 0; }
+.invitation-list li { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 18px 0; border-bottom: 1px solid #e2e8f0; }
+.invitation-list li > div { min-width: 0; overflow-wrap: anywhere; }
+.invitation-list p, .invitation-footnote { font-size: 13px; }
+.invitation-footnote { margin-top: 20px; }
+.invitations-panel [role="status"] { margin-top: 16px; color: #1d4ed8; }

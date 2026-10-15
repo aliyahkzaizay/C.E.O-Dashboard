@@ -200,3 +200,104 @@
   letter-spacing: normal;
   vertical-align: baseline;
 }
+
+/* Controlled disclosure stays mounted so both opening and closing can animate. */
+.club-dropdown { position: relative; }
+.club-selector { cursor: pointer; list-style: none; }
+.club-selector::-webkit-details-marker { display: none; }
+.club-selector:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+.club-dropdown-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 16px 40px rgb(15 23 42 / 10%);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 220ms;
+}
+.club-dropdown-list button {
+  display: block;
+  width: 100%;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: 10px;
+  transition: background-color 160ms ease, color 160ms ease;
+  background: white;
+  color: #334155;
+  text-align: left;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.club-dropdown-list button:hover:not(:disabled),
+.club-dropdown-list button[aria-pressed="true"] { background: #eff6ff; color: #1d4ed8; }
+.club-dropdown-list p { padding: 8px; font-size: 13px; color: #64748b; }
+.club-dropdown-actions { margin-top: 8px; padding-top: 8px; border-top: 1px solid #e2e8f0; }
+.club-dropdown-actions small { display: block; margin-top: 4px; color: #64748b; }
+
+/* Each toggle transitions between these states, including rapid reversals. */
+.club-dropdown[data-open="true"] .club-dropdown-list {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition:
+    opacity 280ms ease,
+    transform 360ms cubic-bezier(0.22, 1.15, 0.36, 1),
+    visibility 0s;
+}
+
+.club-selector-arrow {
+  display: inline-block;
+  flex-shrink: 0;
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.club-dropdown[data-open="true"] .club-selector-arrow {
+  transform: rotate(180deg);
+}
+
+/* Respect the computer's preference for reduced animation. */
+@media (prefers-reduced-motion: reduce) {
+  .club-dropdown .club-dropdown-list,
+  .club-dropdown[data-open="true"] .club-dropdown-list,
+  .club-selector-arrow,
+  .club-dropdown-list button { transition: none; }
+}
+
+/* Owner settings stay at the bottom of the shared sidebar. */
+.dashboard-sidebar { display: flex; flex-direction: column; }
+.dashboard-page .club-settings-button { margin-top: auto; width: 100%; }
+@media (max-width: 760px) {
+  .dashboard-page .club-settings-button { margin-top: 20px; }
+}
+
+/* A new view gets a fresh wrapper so this entrance replays on every navigation.
+ * The sidebar/header stay in place, and clock updates do not restart the fade.
+ */
+.dashboard-view {
+  display: flow-root;
+  animation: dashboard-view-enter 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes dashboard-view-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-view { animation: none; }
+}
