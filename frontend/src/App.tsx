@@ -1,128 +1,289 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
-import { supabaseConfigError } from './lib/supabase'
+import { clearInvitationFromUrl, readPendingInvitation, rememberInvitation } from "./lib/invitations";
+import { getSupabase } from "./lib/supabase";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import type { Session } from "@supabase/supabase-js";
+import Dashboard from "./pages/Dashboard";
+import "./App.css";
 
+/**
+ * Displays the dashboard when signed in, or the account form when signed out.
+ * Keeps the selected view and entered form values in React state.
+ *
+ * @returns The account screen's JSX.
+ */
 function App() {
-  const [count, setCount] = useState(0)
+  const [pendingInvitation, setPendingInvitation] = useState(readPendingInvitation);
+  const [isSignUp, setIsSignUp] = useState(true);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [session, setSession] = useState<Session | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
+  /** Saves an incoming link in this tab while the recipient signs in. */
+  useEffect(() => {
+    function captureInvitation() {
+      const token = readPendingInvitation();
+      if (token) {
+        rememberInvitation(token);
+        setPendingInvitation(token);
+        clearInvitationFromUrl();
+      }
+    }
+    captureInvitation();
+    window.addEventListener("hashchange", captureInvitation);
+    return () => window.removeEventListener("hashchange", captureInvitation);
+  }, []);
+
+  function clearPendingInvitation() {
+    rememberInvitation("");
+    clearInvitationFromUrl();
+    setPendingInvitation("");
+  }
+
+  /**
+   * Keeps the screen in sync with Supabase's initial session and auth changes.
+   * Returns cleanup that removes the listener when the component is removed.
+   */
+  useEffect(() => {
+    try {
+      const { data } = getSupabase().auth.onAuthStateChange(
+        (_event, currentSession) => {
+          setSession(currentSession);
+          setIsCheckingSession(false);
+        }
+      );
+
+      return () => data.subscription.unsubscribe();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to load your session."
+      );
+      setIsCheckingSession(false);
+    }
+  }, []);
+
+
+  /**
+   * Sends the form values to Supabase to create an account or sign in.
+   * Updates loading, error, and success messages for the screen.
+   *
+   * @param event - The form submission event.
+   * @returns A promise that finishes when the request is handled.
+   */
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isLoading) return;
+
+    setError("");
+    setMessage("");
+    setIsLoading(true);
+
+    try {
+      const supabase = getSupabase();
+
+      if (isSignUp) {
+        if (!fullName.trim()) {
+          setError("Please enter your full name.");
+          return;
+        }
+
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: {
+            data: {
+              full_name: fullName.trim(),
+            },
+          },
+        });
+
+        if (authError) throw authError;
+
+        setMessage(
+          data.session
+            ? "You are signed in!"
+            : "Check your email for a confirmation link. If you already have an account, sign in."
+        );
+      } else {
+        const { error: authError } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (authError) throw authError;
+
+        setMessage("You are signed in!");
+      }
+
+      setPassword("");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Something went wrong. Try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  /**
+   * Signs out the current browser session and clears the form.
+   * The auth listener updates session state to show the sign-in view.
+   *
+   * @returns A promise that finishes when sign-out is handled.
+   */
+  async function handleSignOut() {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const { error: authError } = await getSupabase().auth.signOut({
+        scope: "local",
+      });
+      if (authError) throw authError;
+
+      setFullName("");
+      setEmail("");
+      setPassword("");
+      setIsSignUp(false);
+      setMessage("You have signed out.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to sign out. Try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (!isCheckingSession && session) {
+    return (
+      <Dashboard
+        key={session.user.id}
+        pendingInvitation={pendingInvitation}
+        onClearInvitation={clearPendingInvitation}
+        userId={session.user.id}
+        fullName={typeof session.user.user_metadata.full_name === "string" ? session.user.user_metadata.full_name : ""}
+        accountCreatedAt={session.user.created_at}
+        email={session.user.email ?? ""}
+        onSignOut={handleSignOut}
+        isSigningOut={isLoading}
+        error={error}
+      />
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <main className="auth-page">
+      <section className="brand-panel">
+
+        <img
+
+        className="dashboard-preview"
+        src="/images/dashboard-preview.png"
+        alt=""
+        
+        />
         <div>
-          <h1>Get started</h1>
-          {import.meta.env.DEV && (
-            <p role="status">
-              {supabaseConfigError ?? 'Supabase client configured. Live access has not been verified.'}
-            </p>
+          <h1>C.E.O</h1>
+          <h2>Club Engagement Operations</h2>
+          <p>Keep track of all your club stats, in one place.</p>
+        </div>
+      </section>
+
+      <section className="form-panel">
+        <div className="form-content">
+          {isCheckingSession ? (
+            <p role="status">Loading your account…</p>
+          ) : (
+            <>
+              <h2>{isSignUp ? "Create an Account" : "Sign in"}</h2>
+              <p className="form-description">
+                {isSignUp
+                  ? "Create an account and get started managing your club smarter."
+                  : "Welcome back to C.E.O."}
+              </p>
+
+              {pendingInvitation && <p role="status">You have a club invitation. Sign in or create an account with the invited email to continue.</p>}
+              <form onSubmit={handleSubmit}>
+                {isSignUp && (
+                  <label>
+                    <span className="sr-only">Full Name</span>
+                    <input
+                      name="fullName"
+                      placeholder="Full Name"
+                      autoComplete="name"
+                      required
+                      value={fullName}
+                      onChange={(event) => setFullName(event.target.value)}
+                    />
+                  </label>
+                )}
+
+                <label>
+                  <span className="sr-only">Email</span>
+                  <input
+                    name="email"
+                    type="email"
+                    placeholder="Email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    required
+                  />
+                </label>
+
+                <label>
+                  <span className="sr-only">Password</span>
+                  <input
+                    key={isSignUp ? "new-password" : "current-password"}
+                    name="password"
+                    type="password"
+                    placeholder="Password"
+                    autoComplete={isSignUp ? "new-password" : "current-password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    required
+                  />
+                </label>
+
+                {error && <p role="alert">{error}</p>}
+                {message && <p role="status">{message}</p>}
+
+                <button
+                  className="submit-button"
+                  type="submit"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Please wait…" : isSignUp ? "Sign up" : "Sign in"}
+                </button>
+              </form>
+
+              <button
+                className="switch-button"
+                type="button"
+                disabled={isLoading}
+                onClick={() => setIsSignUp(!isSignUp)}
+              >
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "New to C.E.O.? Create an account"}
+              </button>
+            </>
           )}
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
         </div>
       </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    </main>
+  );
 }
 
-export default App
+export default App;
