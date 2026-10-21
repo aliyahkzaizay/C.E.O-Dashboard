@@ -1,9 +1,17 @@
-"""Local API scaffold. No authentication or database operations yet."""
+"""C.E.O. API: health checks and authenticated club invitations."""
 
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from pydantic import BaseModel
 
+from app.routers.invitations import router as invitations_router
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 app = FastAPI(title="C.E.O. API", version="0.1.0")
+app.include_router(invitations_router)
 
 
 class HealthResponse(BaseModel):
