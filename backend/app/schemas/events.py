@@ -20,6 +20,7 @@ class EventResponse(BaseModel):
     event_type: str | None = None
 
     status: str
+    check_in_token: str   
 
     check_in_open: bool
 
