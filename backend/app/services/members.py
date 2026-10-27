@@ -10,7 +10,7 @@ from uuid import UUID
 import httpx
 from fastapi import HTTPException
 
-from app.schemas.members import MemberCreate, MemberListResponse, MemberResponse
+from app.schemas.members import MemberCreate, MemberListResponse, MemberResponse, MemberUpdate
 
 
 async def require_club_access(
@@ -95,24 +95,37 @@ async def list_members(
     organization_id: UUID,
     limit: int = 40,
     offset: int = 0,
+    search: str = "",
 ) -> MemberListResponse:
     """Return a page of current members from an authorized club."""
     if not 1 <= limit <= 100 or offset < 0:
         raise HTTPException(422, "Invalid pagination settings.")
 
     await require_club_access(client, organization_id)
+    term = search.strip()
+    if len(search) > 100 or any(ord(char) < 32 for char in search):
+        raise HTTPException(422, "Search must be at most 100 characters without control characters.")
+    params = {
+        "select": "*",
+        "organization_id": f"eq.{organization_id}",
+        "archived_at": "is.null",
+        "order": "name.asc,member_id.asc",
+        "limit": str(limit),
+        "offset": str(offset),
+    }
+    if term:
+        # PostgreSQL (?iq) enables case-insensitive literal matching, not user regex.
+        # Quote the value for PostgREST so commas/parentheses cannot alter filters.
+        pattern = ("(?iq)" + term).replace("\\", "\\\\").replace('"', '\\"')
+        params["or"] = "(" + ",".join(
+            f'{field}.imatch."{pattern}"'
+            for field in ("name", "email", "external_member_id")
+        ) + ")"
 
     try:
         response = await client.get(
             "/rest/v1/members",
-            params={
-                "select": "*",
-                "organization_id": f"eq.{organization_id}",
-                "archived_at": "is.null",
-                "order": "name.asc,member_id.asc",
-                "limit": str(limit),
-                "offset": str(offset),
-            },
+            params=params,
             headers={"Prefer": "count=exact"},
         )
         if response.status_code == 401:
@@ -138,3 +151,70 @@ async def list_members(
         raise HTTPException(
             502, "Unable to load members. Please try again."
         ) from None
+
+
+async def update_member(
+    client: httpx.AsyncClient,
+    organization_id: UUID,
+    member_id: UUID,
+    changes: MemberUpdate,
+) -> MemberResponse:
+    """Edit only supplied fields on a current member within the authorized club."""
+    await require_club_access(client, organization_id)
+    try:
+        response = await client.patch(
+            "/rest/v1/members",
+            params={
+                "organization_id": f"eq.{organization_id}",
+                "member_id": f"eq.{member_id}",
+                "archived_at": "is.null",
+            },
+            json=changes.model_dump(mode="json", exclude_unset=True),
+            headers={"Prefer": "return=representation"},
+        )
+        if response.status_code == 409:
+            raise HTTPException(409, "Another member already uses this email or external ID. Check archived members too.")
+        if response.status_code == 401:
+            raise HTTPException(401, "Please sign in again.")
+        if response.status_code == 403:
+            raise HTTPException(403, "You do not have permission to edit this member.")
+        response.raise_for_status()
+        records = response.json()
+        if not isinstance(records, list):
+            raise ValueError("Invalid update response")
+        if not records:
+            raise HTTPException(404, "Member not found or unavailable. Refresh the roster.")
+        if len(records) != 1:
+            raise ValueError("Unexpected update result")
+        return MemberResponse.model_validate(records[0])
+    except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError):
+        # A timeout can happen after a successful write; never automatically retry.
+        raise HTTPException(502, "Couldn't confirm the changes were saved. Refresh the roster before trying again.") from None
+
+
+async def get_member(client: httpx.AsyncClient, organization_id: UUID, member_id: UUID) -> MemberResponse:
+    """Read one current member using both IDs and the caller's access scope."""
+    await require_club_access(client, organization_id)
+    try:
+        response = await client.get("/rest/v1/members", params={
+            "select": "*", "organization_id": f"eq.{organization_id}",
+            "member_id": f"eq.{member_id}", "archived_at": "is.null", "limit": "1",
+        })
+        if response.status_code == 401:
+            raise HTTPException(401, "Please sign in again.")
+        if response.status_code == 403:
+            raise HTTPException(403, "You do not have permission to view this member.")
+        response.raise_for_status()
+        records = response.json()
+        if not isinstance(records, list):
+            raise ValueError("Invalid member response")
+        if not records:
+            raise HTTPException(404, "Member not found or unavailable. Refresh the roster.")
+        if len(records) != 1:
+            raise ValueError("Unexpected member result")
+        member = MemberResponse.model_validate(records[0])
+        if member.member_id != member_id or member.organization_id != organization_id or member.archived_at is not None:
+            raise ValueError("Unexpected member scope")
+        return member
+    except (httpx.HTTPError, ValueError, KeyError, TypeError):
+        raise HTTPException(502, "Unable to load member details. Please try again.") from None

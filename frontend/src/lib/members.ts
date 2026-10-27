@@ -5,11 +5,11 @@ export type MemberInput = { name: string; email: string | null; external_member_
 export type Member = MemberInput & { member_id: string; organization_id: string; created_at: string; updated_at: string; archived_at: string | null };
 export type MemberPage = { items: Member[]; total: number; limit: number; offset: number };
 
-/** Send the current session token to Python; never retry a creation automatically. */
+/** Send the current session token to Python; never retry a write automatically. */
 async function request<T>(organizationId: string, options: RequestInit, query = ""): Promise<T> {
   const { data, error } = await getSupabase().auth.getSession();
   if (error || !data.session) throw new Error("Please sign in again.");
-  const creating = options.method === "POST";
+  const creating = options.method === "POST" || options.method === "PATCH";
   let response: Response;
   try {
     response = await fetch(`/api/organizations/${encodeURIComponent(organizationId)}/members${query}`, {
@@ -28,9 +28,21 @@ async function request<T>(organizationId: string, options: RequestInit, query = 
   return body as T;
 }
 
-export function listMembers(organizationId: string, offset: number, signal: AbortSignal) {
-  return request<MemberPage>(organizationId, { signal }, `?limit=40&offset=${offset}`);
+export function listMembers(organizationId: string, offset: number, signal: AbortSignal, search = "", limit = 40) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (search.trim()) params.set("search", search.trim());
+  return request<MemberPage>(organizationId, { signal }, `?${params}`);
 }
 export function createMember(organizationId: string, member: MemberInput) {
   return request<Member>(organizationId, { method: "POST", body: JSON.stringify(member) });
+}
+
+/** Send only changed fields; explicit null clears an optional value. */
+export function updateMember(organizationId: string, memberId: string, changes: Partial<MemberInput>) {
+  return request<Member>(organizationId, { method: "PATCH", body: JSON.stringify(changes) }, `/${encodeURIComponent(memberId)}`);
+}
+
+/** Fetch fresh details within the selected club; closing the panel aborts the request. */
+export function getMember(organizationId: string, memberId: string, signal: AbortSignal) {
+  return request<Member>(organizationId, { signal }, `/${encodeURIComponent(memberId)}`);
 }

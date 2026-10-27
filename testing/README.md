@@ -21,3 +21,15 @@ Status meanings:
 - **Blocked:** the test could not run; record the reason.
 
 Keep older results as historical evidence. Recheck affected features after changes.
+
+## Member editing
+
+See [Member editing tests](member-editing.md) for update endpoint/shared form
+results, a repeatable backend command, and the pending live checklist.
+
+## Member search
+
+See [Live member search](member-search.md) for simulated checks and the pending
+live Supabase checklist.
+
+- [Member details](member-details.md): API access checks and drawer behavior.

@@ -1,4 +1,4 @@
-"""Authenticated routes for creating and listing a club's members."""
+"""Authenticated routes for creating, listing, and editing a club's members."""
 
 import os
 from collections.abc import AsyncIterator
@@ -10,7 +10,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.schemas.members import MemberCreate, MemberListResponse, MemberResponse
+from app.schemas.members import MemberCreate, MemberListResponse, MemberResponse, MemberUpdate
 from app.services import members as member_service
 
 router = APIRouter(prefix="/api/organizations/{organization_id}/members", tags=["Members"])
@@ -75,7 +75,33 @@ async def list_members(
     client: Annotated[httpx.AsyncClient, Depends(get_supabase_client)],
     limit: Annotated[int, Query(ge=1, le=100)] = 40,
     offset: Annotated[int, Query(ge=0)] = 0,
+    search: Annotated[str, Query(max_length=100)] = "",
 ) -> MemberListResponse:
     """Return a bounded page of non-archived members, defaulting to 40 rows."""
     response.headers["Cache-Control"] = "no-store"
-    return await member_service.list_members(client, organization_id, limit, offset)
+    return await member_service.list_members(client, organization_id, limit, offset, search)
+
+
+@router.patch("/{member_id}", response_model=MemberResponse)
+async def update_member(
+    organization_id: UUID,
+    member_id: UUID,
+    payload: MemberUpdate,
+    response: Response,
+    client: Annotated[httpx.AsyncClient, Depends(get_supabase_client)],
+) -> MemberResponse:
+    """Apply validated edits without allowing changes to identity or club assignment."""
+    response.headers["Cache-Control"] = "no-store"
+    return await member_service.update_member(client, organization_id, member_id, payload)
+
+
+@router.get("/{member_id}", response_model=MemberResponse)
+async def get_member(
+    organization_id: UUID,
+    member_id: UUID,
+    response: Response,
+    client: Annotated[httpx.AsyncClient, Depends(get_supabase_client)],
+) -> MemberResponse:
+    """Return one member only after verifying officer access to the club."""
+    response.headers["Cache-Control"] = "no-store"
+    return await member_service.get_member(client, organization_id, member_id)

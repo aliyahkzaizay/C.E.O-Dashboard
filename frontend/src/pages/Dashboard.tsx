@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CreateClubForm from "../components/CreateClubForm";
 import JoinClubForm from "../components/JoinClubForm";
 import AccountSettings from "../components/AccountSettings";
 import ClubInvitations from "../components/ClubInvitations";
 import { useClubs } from "../hooks/useClubs";
+import { useDashboardNavigation } from "../hooks/useDashboardNavigation";
 import DashboardLayout from "../components/DashboardLayout";
 import "./Dashboard.css";
 import Members from "./Members";
@@ -20,17 +21,25 @@ type DashboardProps = {
 /** Displays Home, club creation, invitation acceptance, or account settings in the shared layout. */
 export default function Dashboard({ userId, email, fullName, accountCreatedAt, onSignOut, isSigningOut, error, pendingInvitation, onClearInvitation }: DashboardProps) {
   const { clubs, isLoading, error: clubsError, retry } = useClubs(userId);
-  const [view, setView] = useState<"home" | "create" | "join" | "settings" | "members">("home");
+  const { view, clubId: selectedId, navigate } = useDashboardNavigation();
   const [memberFormOpen, setMemberFormOpen] = useState(false);
   const [focusInvitations, setFocusInvitations] = useState(false);
   const [message, setMessage] = useState("");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedClub = clubs.find(club => club.organization_id === selectedId) ?? clubs[0];
   const activeView = pendingInvitation ? "join" : view;
 
-  function show(next: typeof view) { onClearInvitation(); setView(next); setMessage(""); setMemberFormOpen(false); setFocusInvitations(false); }
+  // Browser history restores pages, not unfinished forms or transient notices.
+  useEffect(() => {
+    function clearTransientState() {
+      setMemberFormOpen(false); setFocusInvitations(false); setMessage("");
+    }
+    window.addEventListener("popstate", clearTransientState);
+    return () => window.removeEventListener("popstate", clearTransientState);
+  }, []);
+
+  function show(next: typeof view, clubId = selectedClub?.organization_id ?? null) { onClearInvitation(); navigate(next, clubId); setMessage(""); setMemberFormOpen(false); setFocusInvitations(false); }
   function joined(id: string) {
-    onClearInvitation(); setSelectedId(id); setView("home");
+    show("home", id);
     setMessage("Invitation accepted. Your club is now available."); retry();
   }
 
@@ -39,7 +48,7 @@ export default function Dashboard({ userId, email, fullName, accountCreatedAt, o
       title={activeView === "members" ? "Members" : activeView === "settings" ? "Settings" : activeView === "join" ? "Join a club" : activeView === "create" ? "Create a club" : `Welcome${fullName.trim() ? `, ${fullName.trim().split(/\s+/)[0]}` : ""}`}
       clubSelector={{
         clubs, selectedClubId: selectedClub?.organization_id ?? null,
-        onSelectClub: id => { setSelectedId(id); show(activeView === "members" ? "members" : "home"); },
+        onSelectClub: id => show(activeView === "members" || activeView === "settings" ? activeView : "home", id),
         clubsLoading: isLoading, clubsError, onRetryClubs: retry,
         onCreateClub: () => show("create"), onJoinClub: () => show("join"),
         onHome: () => show("home"), onMembers: () => show("members"), onSettings: () => show("settings"), activeView,
@@ -52,7 +61,7 @@ export default function Dashboard({ userId, email, fullName, accountCreatedAt, o
         isLoading ? <p role="status">Loading your clubs…</p> : clubsError ? <section className="dashboard-welcome"><p role="alert">{clubsError}</p><button className="club-retry" onClick={retry}>Retry</button></section> : selectedClub ? <Members key={selectedClub.organization_id} club={selectedClub} initiallyAdding={memberFormOpen} /> : <section className="dashboard-welcome"><h2>Select a club to view members</h2><p>Create a club or accept an invitation to get started.</p><div className="welcome-club-actions"><button onClick={() => show("create")}>Create a club</button><button onClick={() => show("join")}>Join a club</button></div></section>
       ) : activeView === "create" ? (
         <CreateClubForm onCancel={() => show("home")} onCreated={id => {
-          setSelectedId(id); setView("home"); setMessage("Club created. You are its owner."); retry();
+          show("home", id); setMessage("Club created. You are its owner."); retry();
         }} />
       ) : activeView === "join" ? (
         <JoinClubForm key={pendingInvitation || "manual"} initialToken={pendingInvitation} email={email} onJoined={joined} onCancel={() => show("home")} />

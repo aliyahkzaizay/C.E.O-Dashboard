@@ -19,8 +19,8 @@
 .members-page button:hover:not(:disabled) { border-color: #2563eb; }
 .member-table-scroll { overflow: auto; max-height: 520px; }
 .members-page table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
-.members-page th { position: sticky; top: 0; z-index: 1; background: #edf2f8; padding: 13px 12px; font-size: 12px; white-space: nowrap; }
-.members-page td { padding: 16px 12px; border-bottom: 1px solid #edf2f8; max-width: 240px; overflow-wrap: anywhere; }
+.members-page th { position: sticky; top: 0; z-index: 1; background: #edf2f8; padding: 11px 8px; font-size: 12px; white-space: nowrap; }
+.members-page td { padding: 12px 8px; border-bottom: 1px solid #edf2f8; max-width: 240px; overflow-wrap: anywhere; }
 .member-name { font-weight: 600; }
 .member-badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; }
 .member-badge.engagement-pending { background: #f1f5f9; color: #475569; }
@@ -54,7 +54,36 @@
 
 .member-identifier-notice { display: block; margin-top: 4px; font-size: 11px; line-height: 1.5; color: #64748b; font-weight: 400; }
 
-/* Disabled row actions retain a subtle hover treatment without opening a menu. */
-.members-page button.member-row-actions:disabled { display: flex; align-items: center; justify-content: center; width: 36px; min-height: 36px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #64748b; opacity: 1; }
-.members-page button.member-row-actions:disabled:hover { background: #f1f5f9; color: #334155; }
+/* Row actions open a small popover above the scrollable roster. */
+.members-page button.member-row-actions { display: flex; align-items: center; justify-content: center; width: 36px; min-height: 36px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #64748b; opacity: 1; }
+.members-page button.member-row-actions:hover { background: #f1f5f9; color: #334155; }
 .member-row-actions svg { width: 20px; height: 20px; }
+
+.member-edit-popover { position: fixed; margin: 0; padding: 5px; width: 160px; border: 1px solid #e2e8f0; border-radius: 9px; background: #fff; box-shadow: 0 8px 24px rgb(15 23 42 / 12%); }
+.members-page .member-edit-popover button { width: 100%; text-align: left; border: 0; }
+.members-page .member-edit-popover button:hover { background: #f1f5f9; }
+/* Keep row labels readable on phones; the existing wrapper handles scrolling. */
+.members-page table { min-width: 620px; }
+.member-badge.engagement-pending { white-space: nowrap; }
+
+/* Keep the action column visible while other columns scroll horizontally. */
+.members-page td.member-actions-column,
+.members-page th.member-actions-column {
+  position: sticky; right: 0; width: 64px; min-width: 64px;
+  text-align: center; box-shadow: -4px 0 8px rgb(15 23 42 / 5%);
+}
+.members-page td.member-actions-column { background: white; z-index: 2; }
+.members-page th.member-actions-column { background: #edf2f8; z-index: 3; }
+.member-actions-column .member-row-actions { margin: auto; }
+
+.member-search { margin-bottom: 20px; }
+.member-search label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 7px; }
+.member-search > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.member-search input { flex: 1; min-width: 160px; min-height: 42px; border: 1px solid #cbd5e1; border-radius: 8px; background: white; padding: 10px 12px; font: inherit; font-size: 13px; color: #0f172a; }
+.member-search input:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }
+.member-search-summary { font-size: 12px; margin-bottom: 10px; }
+.member-search-summary:empty { display: none; }
+
+/* Names are the entry point to a member profile; keep them visually light. */
+.members-page button.member-name-link { padding: 2px 0; min-height: 32px; border: 0; background: transparent; color: #1d4ed8; font-weight: 600; text-align: left; overflow-wrap: anywhere; }
+.members-page button.member-name-link:hover { text-decoration: underline; text-underline-offset: 3px; }

@@ -5,7 +5,7 @@ from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 ClassYear = Literal[
@@ -62,6 +62,25 @@ class MemberCreate(BaseModel):
             raise ValueError("Enter a valid email address.")
 
         return value
+
+
+class MemberUpdate(MemberCreate):
+    """Validate a partial edit: omitted fields stay unchanged; null clears optional fields."""
+
+    name: str | None = Field(default=None, min_length=1)
+
+    @field_validator("name")
+    @classmethod
+    def require_supplied_name(cls, value: str | None) -> str:
+        if value is None:
+            raise ValueError("Name cannot be cleared.")
+        return value
+
+    @model_validator(mode="after")
+    def require_changes(self) -> "MemberUpdate":
+        if not self.model_fields_set:
+            raise ValueError("Provide at least one field to update.")
+        return self
 
 
 class MemberResponse(BaseModel):
