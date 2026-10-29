@@ -1,5 +1,6 @@
 import { ApiError } from '../types/checkin'
 import type { CheckInInfo, CheckInResult } from '../types/checkin'
+import { mockGetInfo, mockSubmit } from '../mocks/checkinMock.ts'
 
 const USE_MOCKS = true // TODO Ticket C: set to false when the real API exists
 
@@ -19,12 +20,12 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function getCheckInInfo(token: string): Promise<CheckInInfo> {
-//   if (USE_MOCKS) return mockGetInfo(token)
+  if (USE_MOCKS) return mockGetInfo(token)
   return request(`/api/check-ins/${encodeURIComponent(token)}`)
 }
 
 export function submitCheckIn(token: string, identifier: string): Promise<CheckInResult> {
-//   if (USE_MOCKS) return mockSubmit(token, identifier)
+  if (USE_MOCKS) return mockSubmit(token, identifier)
   return request(`/api/check-ins/${encodeURIComponent(token)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
