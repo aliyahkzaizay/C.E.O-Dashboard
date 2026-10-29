@@ -1,0 +1,26 @@
+Best Practices
+
+MANDATORY:
+1. Project Management Web Site
+    github
+2. Project Task Tracking Web Site
+    jira
+3. Code repository
+    github
+4. Documented Coding Standards 
+    get a set of standards online to adhere to
+    and then adhere to them
+5. Use the basic concepts behind object oriented design
+    Polymorphism, abstraction, inheritance, and encapsulation.  
+    This can be proven using a descriptive summary of the concepts and 
+    examples where we would see them being used in your project.
+
+OPTIONAL (THREE ARE MENDATORY)
+6. A Linting System
+    using pyLint
+7. Design Patterns
+    Use one or more design patterns to enhance the effectiveness of your project. 
+    You may use any pattern discussed in class or any other documented pattern that you find. 
+    You must document the design pattern(s) in your source code and 
+    provide an explanation of how and why you used the pattern(s).
+8. Automated and Unit Testing
