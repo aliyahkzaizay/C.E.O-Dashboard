@@ -2,10 +2,10 @@
 
 from fastapi import FastAPI
 from pydantic import BaseModel
-from app.routers.event_routers import router as events_router
+from app.routers import events
 
 app = FastAPI(title="C.E.O. API", version="0.1.0")
-app.include_router(events_router)
+app.include_router(events.router)
 
 class HealthResponse(BaseModel):
     status: str
