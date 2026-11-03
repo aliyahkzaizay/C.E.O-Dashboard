@@ -1,0 +1,38 @@
+/* Native dialog sits above the dashboard and makes the background inert. */
+.member-details { position: fixed; inset: 0 0 0 auto; margin: 0; width: min(480px, 100vw); max-width: 100vw; height: 100dvh; max-height: 100dvh; padding: 0; border: 0; background: #fff; color: #0f172a; box-shadow: -12px 0 48px rgb(15 23 42 / 12%); overflow-y: auto; }
+.member-details[open] { animation: member-drawer-enter 240ms ease-out; }
+.member-details::backdrop { background: rgb(15 23 42 / 30%); animation: member-backdrop-enter 200ms ease-out; }
+.member-details-content { padding: 28px; }
+.member-details header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 12px; }
+.member-details header .member-badge { margin-top: 10px; }
+.member-details h2 { font-size: 24px; font-weight: 650; overflow-wrap: anywhere; }
+.member-details header button { font-size: 24px; line-height: 1; flex-shrink: 0; }
+.member-details-toolbar { display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-bottom: 8px; }
+.member-details dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+.member-details dl > div { padding: 16px 0; border-bottom: 1px solid #edf2f8; }
+.member-details dt { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+.member-details dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+.member-details-attendance { margin-top: 22px; }
+.member-details h3 { font-size: 16px; font-weight: 600; }
+.member-details-attendance p { font-size: 13px; margin-top: 10px; }
+.member-details button:focus-visible, .members-page .member-name-link:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+@keyframes member-drawer-enter { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes member-backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 600px) { .member-details { width: 100vw; } .member-details-content { padding: 22px; } }
+@media (prefers-reduced-motion: reduce) { .member-details[open], .member-details::backdrop { animation: none; } }
+
+/* Unavailable attendance keeps its final layout without inventing counts. */
+.member-attendance-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.member-attendance-stat { padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; }
+.member-attendance-stat span { display: block; font-size: 12px; color: #64748b; }
+.member-attendance-stat strong { display: block; margin-top: 8px; font-size: 24px; font-weight: 600; }
+.member-details-history { margin-top: 20px; }
+.member-details-history table { min-width: 0; table-layout: fixed; margin-top: 10px; }
+.member-details-history th { position: static; white-space: normal; font-size: 11px; padding: 12px 8px; }
+.member-details-history td.member-history-empty { padding: 16px 12px; text-align: center; font-size: 13px; color: #64748b; line-height: 1.6; }
+
+.member-attendance-stat .member-stat-icon { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-bottom: 12px; border-radius: 8px; background: #eaf1ff; color: #2563eb; }
+.member-stat-icon svg { width: 18px; height: 18px; }
+.member-history-empty svg { display: block; width: 24px; height: 24px; margin: 0 auto 8px; color: #94a3b8; }
+.member-history-empty span { display: block; }
+@media (max-width: 350px) { .member-details dl { grid-template-columns: 1fr; } }

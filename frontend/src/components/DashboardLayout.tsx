@@ -11,6 +11,7 @@ type DashboardLayoutProps = {
   onSignOut: () => Promise<void>;
   isSigningOut: boolean;
   children: ReactNode;
+  headerActions?: ReactNode;
 };
 
 /**
@@ -19,7 +20,7 @@ type DashboardLayoutProps = {
  * @returns The shared layout surrounding the current page's content.
  */
 export default function DashboardLayout({
-  title, email, onSignOut, isSigningOut, children, clubSelector,
+  title, email, onSignOut, isSigningOut, children, clubSelector, headerActions,
 }: DashboardLayoutProps) {
     const [now, setNow] = useState(() => new Date());
 
@@ -50,15 +51,16 @@ export default function DashboardLayout({
               </time>
             </div>
   
-            <div>
-              <p>{email}</p>
+            <div className="dashboard-header-tools">
+              {headerActions && <div className="dashboard-header-actions" aria-label="Quick actions">{headerActions}</div>}
+              <div className="dashboard-account-controls"><p>{email}</p>
               <button
                 type="button"
                 onClick={onSignOut}
                 disabled={isSigningOut}
               >
                 {isSigningOut ? "Signing out…" : "Sign out"}
-              </button>
+              </button></div>
             </div>
           </header>
         <div className="dashboard-view" key={clubSelector.activeView}>
