@@ -13,7 +13,6 @@ from app.imports.cleaning import (
     clean_identifier,
     clean_name,
     is_valid_email,
-    matching_key,
     parse_iso_date,
 )
 from app.imports.parsers import ParsedFile
@@ -113,9 +112,9 @@ def suggest_mapping(headers: list[str]) -> dict[str, str]:
     return mapping
 
 
-def required_fields(matching_method: str) -> tuple[str, str]:
+def required_fields(matching_method: str) -> tuple[str, ...]:
     _check_method(matching_method)
-    return ("name", "email" if matching_method == "email" else "external_member_id")
+    return ("name",)
 
 
 def check_mapping(mapping: dict[str, str], headers: list[str], matching_method: str) -> list[ImportIssue]:
@@ -125,6 +124,8 @@ def check_mapping(mapping: dict[str, str], headers: list[str], matching_method: 
             issues.append(
                 ImportIssue(None, member_field, "MAPPING_REQUIRED", f"Choose the column that holds {member_field}.")
             )
+    if not any(field in mapping for field in ("email", "external_member_id")):
+        issues.append(ImportIssue(None, None, "MAPPING_REQUIRED", "Choose an email or external ID column."))
     seen: dict[str, str] = {}
     for member_field, header in mapping.items():
         if member_field not in MEMBER_FIELDS:
@@ -165,7 +166,10 @@ def validate_rows(
     *,
     existing_keys: Collection[str] = (),
     expected_id_length: int | None = None,
+    existing_emails: Collection[str] = (),
+    existing_ids: Collection[str] = (),
 ) -> ValidationResult:
+    """Validate import rows independently of file format; duplicates never overwrite members."""
     _check_method(matching_method)
     mapping_issues = check_mapping(mapping, parsed.headers, matching_method)
     if mapping_issues:
@@ -178,8 +182,10 @@ def validate_rows(
         ]
         expected_id_length = infer_identifier_length(cleaned_ids)
 
-    existing = set(existing_keys)
-    first_row_for_key: dict[str, int] = {}
+    existing = {("email", value) for value in existing_emails} | {("external_member_id", value) for value in existing_ids}
+    matching_field = "email" if matching_method == "email" else "external_member_id"
+    existing.update((matching_field, value) for value in existing_keys)
+    first_row_for_key: dict[tuple[str, str], int] = {}
     results: list[RowResult] = []
 
     for row in parsed.rows:
@@ -204,6 +210,11 @@ def validate_rows(
         for member_field in required:
             if not values[member_field]:
                 add(member_field, "REQUIRED_FIELD_MISSING", f"{member_field} is required.")
+
+        if not email and not identifier:
+            add("email", "REQUIRED_FIELD_MISSING", "Provide an email or external ID for import. Name-only members can be added manually.")
+        elif not values[matching_field]:
+            add(matching_field, "MISSING_CHECK_IN_IDENTIFIER", "This member is missing the club's check-in identifier.", "warning")
 
         if name and len(name) > MAX_NAME_LENGTH:
             add("name", "FIELD_TOO_LONG", f"Name is longer than {MAX_NAME_LENGTH} characters.")
@@ -241,21 +252,21 @@ def validate_rows(
             name=name or "", external_member_id=identifier, email=email,
             date_joined=date_joined, class_year=class_year,
         )
-        key = matching_key(email, identifier, matching_method)
-        first_row = first_row_for_key.get(key)
-        if first_row is not None:
-            add(required[1], "DUPLICATE_IN_FILE",
-                f"Same {required[1]} as row {first_row}. This row is skipped.", "warning")
+        keys = [(field, value) for field, value in (("email", email), ("external_member_id", identifier)) if value]
+        duplicate = next((key for key in keys if key in first_row_for_key), None)
+        if duplicate:
+            add(duplicate[0], "DUPLICATE_IN_FILE",
+                f"Same {duplicate[0]} as row {first_row_for_key[duplicate]}. This row is skipped.", "warning")
             results.append(RowResult(row.number, "skipped", member, issues))
             continue
-
-        first_row_for_key[key] = row.number
-        if key in existing:
-            add(required[1], "DUPLICATE_MEMBER_IDENTIFIER",
-                "A member with this identifier already exists. This row is skipped and the member is not changed.",
-                "warning")
+        duplicate = next((key for key in keys if key in existing), None)
+        if duplicate:
+            add(duplicate[0], "DUPLICATE_MEMBER_IDENTIFIER",
+                "A current or archived member uses this email or external ID. Review conflicts; existing members are not changed.", "warning")
             results.append(RowResult(row.number, "skipped", member, issues))
         else:
+            for key in keys:
+                first_row_for_key[key] = row.number
             results.append(RowResult(row.number, "ready", member, issues))
 
     return ValidationResult(rows=results)

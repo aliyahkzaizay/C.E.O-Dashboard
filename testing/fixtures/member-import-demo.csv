@@ -1,0 +1,9 @@
+Name,Email,External ID,Date Joined,Class Year
+Avery Sample,avery.sample@example.test,001001,2026-09-01,first year
+Jordan Demo,jordan.demo@example.test,001002,2026-09-02,sophomore
+Morgan Example,morgan.example@example.test,001003,,
+Casey Practice,casey.practice@example.test,,,junior
+Riley Test,,001005,2026-10-01,senior
+Avery Duplicate,avery.sample@example.test,001006,,
+Taylor Invalid,not-an-email,001007,,
+Missing Identifier,,,,

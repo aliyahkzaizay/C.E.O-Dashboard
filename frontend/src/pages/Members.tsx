@@ -3,6 +3,7 @@ import type { Club } from "../hooks/useClubs";
 import { listMembers } from "../lib/members";
 import type { Member, MemberPage } from "../lib/members";
 import MemberDetails from "../components/MemberDetails";
+import MemberImport from "../components/MemberImport";
 import MemberForm from "../components/MemberForm";
 import "./Members.css";
 
@@ -24,6 +25,7 @@ function MemberActions({ name, onEdit }: { name: string; onEdit: () => void }) {
 
 /** Display only the selected club's roster; parent keys this page by club ID. */
 export default function Members({ club, initiallyAdding = false }: { club: Club; initiallyAdding?: boolean }) {
+  const [importing, setImporting] = useState(false);
   const [search, setSearch] = useState("");
   const [rosterCount, setRosterCount] = useState<{ attempt: number; total?: number; error?: string } | null>(null);
   const [offset, setOffset] = useState(0);
@@ -79,8 +81,9 @@ export default function Members({ club, initiallyAdding = false }: { club: Club;
     </div>
     <div className="members-grid">
       <section className="member-card member-roster" aria-labelledby="roster-heading">
-        <div className="member-section-heading"><div><h2 id="roster-heading">Member Roster</h2><p>{club.organization_name}</p></div><div className="member-roster-actions"><button type="button" disabled>Import members <span className="member-coming-soon">Coming soon</span></button><button ref={addButton} className="member-primary" type="button" aria-expanded={adding} onClick={() => { setEditing(null); setAdding(true); setNotice(""); }}>+ Add member</button></div></div>
+        <div className="member-section-heading"><div><h2 id="roster-heading">Member Roster</h2><p>{club.organization_name}</p></div><div className="member-roster-actions"><button type="button" disabled={importing} onClick={() => { setImporting(true); setEditing(null); setAdding(false); setNotice(""); }}>Import members</button><button ref={addButton} disabled={importing} className="member-primary" type="button" aria-expanded={adding} onClick={() => { setEditing(null); setAdding(true); setNotice(""); }}>+ Add member</button></div></div>
         <div className="member-search"><label htmlFor="member-search">Search members</label><div><input id="member-search" type="search" placeholder="Name, email, or external ID" maxLength={100} value={search} onChange={event => changeSearch(event.target.value)} aria-controls="member-results" autoComplete="off" />{search && <button type="button" onClick={() => changeSearch("")}>Clear search</button>}</div></div>
+        {importing && <MemberImport organizationId={club.organization_id} identifierLabel={externalLabel} onClose={() => { setImporting(false); addButton.current?.focus(); }} onImported={() => { changeSearch(""); setAttempt(n => n + 1); }} />}
         {(adding || editing) && <MemberForm key={editing?.member_id ?? "new"} member={editing ?? undefined} organizationId={club.organization_id} identifierLabel={externalLabel} onCancel={closeForm} onSaved={() => { const wasEditing = !!editing; closeForm(); if (!wasEditing) changeSearch(""); setAttempt(n => n + 1); setNotice(wasEditing ? "Member updated successfully." : "Member added successfully."); }} />}
         {notice && <p className="member-success" role="status">{notice}</p>}
         <div id="member-results" aria-busy={loading}>

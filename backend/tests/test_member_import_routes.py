@@ -127,10 +127,10 @@ def test_existing_and_archived_members_are_skipped_not_changed(client, db, fixtu
 def test_row_that_becomes_duplicate_during_save_is_skipped(client, db, fixture_bytes, monkeypatch):
     from app.imports import service
 
-    async def stale_keys(self, method):
-        return set()
+    async def stale_keys(self):
+        return set(), set()
 
-    monkeypatch.setattr(service.SupabaseRoster, "existing_keys", stale_keys)
+    monkeypatch.setattr(service.SupabaseRoster, "existing_identifiers", stale_keys)
     db["members"].append({"organization_id": ORG, "name": "Sneaky", "email": None, "external_member_id": "001234568"})
     response = post(client, "", fixture_bytes("members_valid.csv"), mapping=VALID_MAPPING)
     assert response.json()["summary"] == {"created": 3, "skipped": 1, "failed": 0}
@@ -173,10 +173,10 @@ def test_rows_are_saved_in_batches_not_one_by_one(client, db, fixture_bytes, mon
 
 
 def test_a_clashing_batch_saves_nothing_then_rows_are_retried_one_by_one(client, db, fixture_bytes, monkeypatch):
-    async def stale_keys(self, method):
-        return set()
+    async def stale_keys(self):
+        return set(), set()
 
-    monkeypatch.setattr(service.SupabaseRoster, "existing_keys", stale_keys)
+    monkeypatch.setattr(service.SupabaseRoster, "existing_identifiers", stale_keys)
     db["members"].append({"organization_id": ORG, "name": "Sneaky", "email": None, "external_member_id": "001234569"})
     response = post(client, "", fixture_bytes("members_valid.csv"), mapping=VALID_MAPPING)
     assert response.json()["summary"] == {"created": 3, "skipped": 1, "failed": 0}
@@ -234,12 +234,13 @@ def test_signed_out_requests_do_not_use_up_the_limit(client, db, fixture_bytes, 
     assert post(client, "/preview", fixture_bytes("members_valid.csv")).status_code == 200
 
 
-def test_email_matching_clubs_require_email(client, db):
+def test_email_matching_clubs_allow_external_id_with_warning(client, db):
     db["method"] = "email"
     response = post(client, "", b"Name,RIN\nAlex,001\n", mapping={"name": "Name", "external_member_id": "RIN"})
-    assert response.status_code == 422
-    assert response.json()["error"] == {"code": "MAPPING_REQUIRED", "message": "Choose the column that holds email.", "field": "email"}
-    assert db["members"] == []
+    assert response.status_code == 200
+    assert response.json()["summary"]["created"] == 1
+    assert response.json()["issues"][0]["code"] == "MISSING_CHECK_IN_IDENTIFIER"
+
 
 
 def test_signed_out_and_non_officers_are_refused(client, db, fixture_bytes):
@@ -281,3 +282,45 @@ def test_mapping_problems(client, fixture_bytes):
     assert bad.status_code == 422 and bad.json()["error"]["code"] == "INVALID_MAPPING"
     soft = post(client, "/preview", fixture_bytes("members_valid.csv"), mapping={"name": "Nope"})
     assert soft.status_code == 200 and soft.json()["mapping_issues"]
+
+def test_preview_sample_is_bounded_but_all_rows_saved(client, db):
+    content = ("Name,Email\n" + "".join(f"Member {i},m{i}@example.test\n" for i in range(120))).encode()
+    mapping = {"name": "Name", "email": "Email"}
+    preview = post(client, "/preview", content, mapping=mapping).json()
+    assert preview["summary"]["ready"] == 120
+    assert len(preview["rows"]) == preview["preview_limit"] == 100
+    assert preview["rows"][0]["member"]["name"] == "Member 0"
+    assert not db["members"]
+    assert post(client, "", content, mapping=mapping).json()["summary"]["created"] == 120
+    assert post(client, "", content, mapping=mapping).json()["summary"]["skipped"] == 120
+
+
+def test_secondary_email_duplicate_is_caught_before_save(client, db):
+    db["members"] = [{"organization_id": ORG, "email": "a@example.test", "external_member_id": "old", "archived_at": "2026-01-01"}]
+    content = b"Name,Email,RIN\nNew,A@example.test,new\n"
+    preview = post(client, "/preview", content, mapping={"name": "Name", "email": "Email", "external_member_id": "RIN"}).json()
+    assert preview["summary"]["skipped"] == 1
+    assert preview["rows"][0]["status"] == "skipped"
+    assert not db["posts"]
+
+
+def test_xlsx_preview_save_and_repeat(client, db, make_xlsx):
+    content = make_xlsx([["Name", "Email", "ID"], ["Alex", None, "001"], ["Sam", "sam@example.test", None]])
+    mapping = {"name": "Name", "email": "Email", "external_member_id": "ID"}
+    assert post(client, "/preview", content, filename="members.xlsx", mapping=mapping).json()["rows"][0]["member"]["external_member_id"] == "001"
+    assert post(client, "", content, filename="members.xlsx", mapping=mapping).json()["summary"]["created"] == 2
+    assert post(client, "", content, filename="members.xlsx", mapping=mapping).json()["summary"]["skipped"] == 2
+
+
+def test_failed_preview_rows_preserve_mapped_values_without_allowing_save(client, db):
+    content = b"Name,Email,ID,Joined,Year\nTaylor Invalid,not-an-email,001,bad-date,unknown\nMissing Identifier,,,,\n"
+    mapping = {"name": "Name", "email": "Email", "external_member_id": "ID", "date_joined": "Joined", "class_year": "Year"}
+    preview = post(client, "/preview", content, mapping=mapping).json()
+    invalid, missing = preview["rows"]
+    assert invalid["member"] is None and missing["member"] is None
+    assert invalid["source_values"] == {"name": "Taylor Invalid", "email": "not-an-email", "external_member_id": "001", "date_joined": "bad-date", "class_year": "unknown"}
+    assert missing["source_values"]["name"] == "Missing Identifier"
+    assert "INVALID_EMAIL" in {issue["code"] for issue in invalid["issues"]}
+    assert "REQUIRED_FIELD_MISSING" in {issue["code"] for issue in missing["issues"]}
+    assert post(client, "", content, mapping=mapping).json()["summary"]["created"] == 0
+    assert not db["members"]

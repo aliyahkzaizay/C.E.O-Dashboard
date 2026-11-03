@@ -1,10 +1,10 @@
 
+from dataclasses import asdict
 from uuid import UUID
 
 import httpx
 from fastapi import HTTPException
 
-from app.imports.cleaning import matching_key
 from app.imports.parsers import ParsedFile
 from app.imports.validation import (
     CleanMember,
@@ -52,9 +52,10 @@ class SupabaseRoster:
             raise HTTPException(502, "Unable to read the club's settings. Please try again.")
         return method
 
-    async def existing_keys(self, method: str) -> set[str]:
+    async def existing_identifiers(self) -> tuple[set[str], set[str]]:
         """Matching values of every member, archived ones included (they keep their identifiers)."""
-        keys: set[str] = set()
+        emails: set[str] = set()
+        identifiers: set[str] = set()
         offset = 0
         try:
             while True:
@@ -73,11 +74,12 @@ class SupabaseRoster:
                 if not isinstance(records, list):
                     raise ValueError("Invalid roster response")
                 for record in records:
-                    key = matching_key(record.get("email"), record.get("external_member_id"), method)
-                    if key:
-                        keys.add(key)
+                    if record.get("email"):
+                        emails.add(record["email"].strip().lower())
+                    if record.get("external_member_id"):
+                        identifiers.add(record["external_member_id"])
                 if len(records) < _PAGE:
-                    return keys
+                    return emails, identifiers
                 offset += _PAGE
         except (httpx.HTTPError, ValueError, TypeError):
             raise HTTPException(502, "Unable to read the roster. Please try again.") from None
@@ -121,14 +123,22 @@ class SupabaseRoster:
 
 async def _validate(parsed: ParsedFile, mapping: dict[str, str], roster: SupabaseRoster) -> ValidationResult:
     method = await roster.matching_method()
-    return validate_rows(parsed, mapping, method, existing_keys=await roster.existing_keys(method))
+    emails, identifiers = await roster.existing_identifiers()
+    return validate_rows(parsed, mapping, method, existing_emails=emails, existing_ids=identifiers)
 
 
 async def preview_import(parsed: ParsedFile, mapping: dict[str, str] | None, roster: SupabaseRoster) -> dict:
     """Check the file against the club roster. Saves nothing."""
     used = mapping if mapping is not None else suggest_mapping(parsed.headers)
     result = await _validate(parsed, used, roster)
+    source_rows = {row.number: row.values for row in parsed.rows}
     return {
+        "rows": [{"row_number": row.row_number, "status": row.status,
+                  "member": asdict(row.member) if row.member else None,
+                  "source_values": {field: source_rows[row.row_number].get(header, "")
+                                    for field, header in used.items()},
+                  "issues": [issue.to_dict() for issue in row.issues]} for row in result.rows[:100]],
+        "preview_limit": 100,
         "file_type": parsed.file_type,
         "headers": parsed.headers,
         "suggested_mapping": suggest_mapping(parsed.headers),
@@ -177,7 +187,7 @@ async def run_import(
         except RosterUnavailable:
             interrupted = True
             for row in batch:
-                lost(row.row_number, "SAVE_UNCONFIRMED", "Could not confirm this row was saved. Upload the file again to finish.")
+                lost(row.row_number, "SAVE_UNCONFIRMED", "Could not confirm this row was saved. Refresh the roster and preview the file again before retrying.")
             continue
         except DuplicateMemberError:
             pass  # nothing in the batch was saved: fall back to one row at a time
@@ -196,7 +206,7 @@ async def run_import(
                                         "warning"))
             except RosterUnavailable:
                 interrupted = True
-                lost(row.row_number, "SAVE_UNCONFIRMED", "Could not confirm this row was saved. Upload the file again to finish.")
+                lost(row.row_number, "SAVE_UNCONFIRMED", "Could not confirm this row was saved. Refresh the roster and preview the file again before retrying.")
 
     summary = validation.summary
     return {
