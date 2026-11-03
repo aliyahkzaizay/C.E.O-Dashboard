@@ -19,6 +19,37 @@ Before starting work, choose or create a Jira task with an owner and clear accep
 
 Use **To Do → In Progress → In Review → Done**. Keep technical discussion and code review on the pull request; link it from Jira so the task and implementation can be found together.
 
+## Coding Standards
+
+### Naming
+
+- Name React component files after their main component: `MemberDetails` belongs in `MemberDetails.tsx`.
+- Use PascalCase for components, classes, and types: `MemberDetails`, `MemberCreate`.
+- Use camelCase for TypeScript functions and local variables: `getMember`, `memberId`.
+- Start custom React hook names with “use”: `useClubs`.
+- Use snake_case for Python functions and variables: `get_member`, `member_id`.
+- Preserve API/database field names when representing their data: `organization_id`, `external_member_id`.
+
+### Function and Component Documentation
+
+- Use Python docstrings inside functions and classes.
+- Use TypeScript documentation comments above exported functions, hooks, and components.
+- Explain the purpose and important behavior rather than repeating each line of code.
+- Update explanations when behavior changes.
+
+Existing Python example from [member schemas](backend/app/schemas/members.py):
+
+```python
+class MemberCreate(BaseModel):
+    """Validate the information an officer submits to add a member."""
+```
+
+Existing TypeScript example from [useClubs](frontend/src/hooks/useClubs.ts):
+
+```typescript
+/** Loads the current user's club memberships. Database policies enforce access. */
+```
+
 ## Branch Naming
 
 Use one short-lived branch per task, starting from the latest `main`. The initial scaffold and setup may go directly on `main`; subsequent work uses task branches.

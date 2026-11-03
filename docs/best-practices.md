@@ -46,17 +46,17 @@ Evidence:
 
 ### 4. Documented Coding Standards
 
-The contribution guide documents branch names, commit messages, reviews, and verification requirements.
+The contribution guide defines Python and TypeScript naming conventions, component filenames, and function/component documentation. It also covers branches, commits, reviews, and verification.
 
 Evidence:
 
-- [Contribution guide](../CONTRIBUTING.md)
+- [Coding standards](../CONTRIBUTING.md#coding-standards)
+- [MemberDetails component and matching filename](../frontend/src/components/MemberDetails.tsx)
+- [Python class names and docstrings](../backend/app/schemas/members.py): `MemberCreate` and `validate_email`.
+- [TypeScript hook naming and documentation](../frontend/src/hooks/useClubs.ts): `useClubs`.
 
-Missing:
+These examples show existing usage; they do not establish that every file follows the standards.
 
-- Explicit Python and TypeScript naming and formatting standards.
-- Code documentation conventions.
-- Evidence that the team reviewed and applied these standards.
 
 ### 5. Object-Oriented Design
 
