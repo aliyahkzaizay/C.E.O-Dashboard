@@ -1,16 +1,3 @@
-"""Column mapping and row checks for member imports.
-
-Nothing is saved here. validate_rows() answers: for each row, is it ready to import, should it
-be skipped (a duplicate), or did it fail (something to fix in the file)? Every issue names the
-row and the member field so the officer knows exactly what to correct.
-
-Row outcomes:
-  ready    - valid and new; safe to create.
-  skipped  - a duplicate of an earlier row in the file or of someone already on the roster.
-             Existing members are never overwritten.
-  failed   - missing or invalid data, or an identifier that may have lost its leading zeros.
-"""
-
 import re
 from collections import Counter
 from collections.abc import Collection
@@ -21,6 +8,7 @@ from app.imports.cleaning import (
     MATCHING_METHODS,
     MAX_IDENTIFIER_LENGTH,
     MAX_NAME_LENGTH,
+    clean_class_year,
     clean_email,
     clean_identifier,
     clean_name,
@@ -30,7 +18,7 @@ from app.imports.cleaning import (
 )
 from app.imports.parsers import ParsedFile
 
-MEMBER_FIELDS = ("name", "external_member_id", "email", "date_joined")
+MEMBER_FIELDS = ("name", "external_member_id", "email", "date_joined", "class_year")
 
 _HEADER_ALIASES = {
     "name": {"name", "full name", "member name", "member", "student name"},
@@ -39,6 +27,7 @@ _HEADER_ALIASES = {
     },
     "email": {"email", "e mail", "email address", "student email"},
     "date_joined": {"date joined", "joined", "join date", "joined on", "date of joining"},
+    "class_year": {"class year", "year", "class", "grade", "grade level", "academic year", "class standing"},
 }
 
 _DIGITS = re.compile(r"^[0-9]+$")
@@ -46,11 +35,11 @@ _DIGITS = re.compile(r"^[0-9]+$")
 
 @dataclass
 class ImportIssue:
-    row: int | None  # None for problems with the column mapping
+    row: int | None
     field: str | None
     code: str
     message: str
-    severity: str = "error"  # "error" blocks a row; "warning" is informational
+    severity: str = "error"
 
     def to_dict(self) -> dict:
         return {
@@ -68,12 +57,13 @@ class CleanMember:
     external_member_id: str | None
     email: str | None
     date_joined: date | None
+    class_year: str | None = None
 
 
 @dataclass
 class RowResult:
     row_number: int
-    status: str  # "ready", "skipped", or "failed"
+    status: str
     member: CleanMember | None
     issues: list[ImportIssue] = field(default_factory=list)
 
@@ -105,15 +95,11 @@ class ValidationResult:
         }
 
 
-# ---------------------------------------------------------------- column mapping
-
-
 def _normalize_header(header: str) -> str:
     return " ".join(re.sub(r"[^a-z0-9]+", " ", header.casefold()).split())
 
 
 def suggest_mapping(headers: list[str]) -> dict[str, str]:
-    """Guess which file column holds each member field. The officer confirms or changes it."""
     mapping: dict[str, str] = {}
     used: set[str] = set()
     for member_field in MEMBER_FIELDS:
@@ -128,7 +114,6 @@ def suggest_mapping(headers: list[str]) -> dict[str, str]:
 
 
 def required_fields(matching_method: str) -> tuple[str, str]:
-    """Every member needs a name and the club's matching field."""
     _check_method(matching_method)
     return ("name", "email" if matching_method == "email" else "external_member_id")
 
@@ -160,11 +145,7 @@ def check_mapping(mapping: dict[str, str], headers: list[str], matching_method: 
     return issues
 
 
-# ---------------------------------------------------------------- row checks
-
-
 def infer_identifier_length(identifiers: Collection[str]) -> int | None:
-    """If most all-digit identifiers share one length, return it. A tie returns None (no guessing)."""
     lengths = Counter(len(i) for i in identifiers if _DIGITS.match(i))
     common = lengths.most_common(2)
     if not common:
@@ -185,14 +166,6 @@ def validate_rows(
     existing_keys: Collection[str] = (),
     expected_id_length: int | None = None,
 ) -> ValidationResult:
-    """Check every row.
-
-    existing_keys: matching values already on the club roster, cleaned the same way
-    (emails lowercased, identifiers trimmed). Callers pass an empty collection until the
-    roster is connected.
-    expected_id_length: the club's identifier length when known (for example 9 for a RIN).
-    When None, the length most identifiers in this file share is used.
-    """
     _check_method(matching_method)
     mapping_issues = check_mapping(mapping, parsed.headers, matching_method)
     if mapping_issues:
@@ -245,6 +218,12 @@ def validate_rows(
         except ValueError as error:
             add("date_joined", "INVALID_DATE", str(error))
 
+        class_year: str | None = None
+        try:
+            class_year = clean_class_year(raw.get("class_year"))
+        except ValueError as error:
+            add("class_year", "INVALID_CLASS_YEAR", str(error))
+
         if identifier and _DIGITS.match(identifier) and id_header:
             if expected_id_length and len(identifier) < expected_id_length:
                 add("external_member_id", "AMBIGUOUS_IDENTIFIER",
@@ -258,7 +237,10 @@ def validate_rows(
             results.append(RowResult(row.number, "failed", None, issues))
             continue
 
-        member = CleanMember(name=name or "", external_member_id=identifier, email=email, date_joined=date_joined)
+        member = CleanMember(
+            name=name or "", external_member_id=identifier, email=email,
+            date_joined=date_joined, class_year=class_year,
+        )
         key = matching_key(email, identifier, matching_method)
         first_row = first_row_for_key.get(key)
         if first_row is not None:

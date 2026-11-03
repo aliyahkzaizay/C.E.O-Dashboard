@@ -4,3 +4,4 @@ openpyxl
 resend
 python-dotenv
 httpx
+python-multipart

@@ -3,6 +3,7 @@ from datetime import date
 import pytest
 
 from app.imports.cleaning import (
+    clean_class_year,
     clean_email,
     clean_identifier,
     clean_name,
@@ -60,3 +61,18 @@ def test_matching_key_follows_the_club_method():
     assert matching_key("a@b.co", "001", "external_id") == "001"
     with pytest.raises(ValueError):
         matching_key("a@b.co", "001", "phone")
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [("Freshman", "first_year"), ("1st Year", "first_year"), ("SOPH.", "sophomore"), ("Jr", "junior"),
+     ("senior", "senior"), ("Grad Student", "graduate"), ("PhD", "graduate"), ("Other", "other"),
+     ("  ", None), (None, None)],
+)
+def test_class_year_spellings(text, expected):
+    assert clean_class_year(text) == expected
+
+
+def test_unknown_class_year_is_rejected():
+    with pytest.raises(ValueError):
+        clean_class_year("Wizard")
