@@ -44,12 +44,11 @@ def test_suggest_mapping_does_not_use_a_column_twice():
     assert suggest_mapping(["ID", "Name"]) == {"name": "Name", "external_member_id": "ID"}
 
 
-def test_mapping_must_cover_name_and_the_matching_field():
+def test_mapping_requires_name_and_either_identifier():
     issues = check_mapping({"name": "Name"}, ["Name", "RIN"], "external_id")
-    assert [(i.code, i.field) for i in issues] == [("MAPPING_REQUIRED", "external_member_id")]
+    assert [(i.code, i.field) for i in issues] == [("MAPPING_REQUIRED", None)]
     assert check_mapping({"name": "Name", "external_member_id": "RIN"}, ["Name", "RIN"], "external_id") == []
-    # The other field is optional, so email is not demanded when matching by ID.
-    assert check_mapping({"name": "Name", "external_member_id": "RIN"}, ["Name", "RIN"], "email")[0].field == "email"
+    assert check_mapping({"name": "Name", "external_member_id": "RIN"}, ["Name", "RIN"], "email") == []
 
 
 def test_mapping_problems_for_missing_and_reused_columns():
@@ -205,3 +204,22 @@ def test_result_to_dict_shape(messy):
     data = validate_rows(messy, MESSY_MAPPING, "external_id").to_dict()
     assert set(data) == {"summary", "mapping_issues", "issues"}
     assert set(data["issues"][0]) == {"row", "field", "code", "message", "severity"}
+
+
+@pytest.mark.parametrize("method", ["email", "external_id"])
+def test_either_identifier_is_accepted_and_missing_checkin_value_warns(method):
+    parsed = parse_member_file("m.csv", b"Name,Email,ID\nA,a@example.test,\nB,,001\nC,,\n")
+    result = validate_rows(parsed, {"name": "Name", "email": "Email", "external_member_id": "ID"}, method)
+    assert [row.status for row in result.rows] == ["ready", "ready", "failed"]
+    assert any(issue.code == "MISSING_CHECK_IN_IDENTIFIER" for issue in result.issues)
+
+
+def test_preview_detects_secondary_identifier_duplicates():
+    parsed = parse_member_file("m.csv", b"Name,Email,ID\nA,a@example.test,001\nB,A@example.test,002\nC,c@example.test,003\nD,d@example.test,004\n")
+    result = validate_rows(parsed, {"name": "Name", "email": "Email", "external_member_id": "ID"}, "external_id", existing_emails={"c@example.test"}, existing_ids={"004"})
+    assert [row.status for row in result.rows] == ["ready", "skipped", "skipped", "skipped"]
+
+
+def test_same_name_different_identifiers_is_not_duplicate():
+    parsed = parse_member_file("m.csv", b"Name,Email\nAlex,a@example.test\nAlex,b@example.test\n")
+    assert validate_rows(parsed, {"name": "Name", "email": "Email"}, "email").summary["ready"] == 2
