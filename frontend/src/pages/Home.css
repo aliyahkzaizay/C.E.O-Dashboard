@@ -1,0 +1,55 @@
+/* Home uses the shared dashboard shell; all unavailable metrics remain unpopulated. */
+.home-overview { margin-top: 20px; }
+.home-context { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.home-context p { font-weight: 600; }
+.home-context span, .home-overview small, .home-overview p { color: #64748b; }
+.home-context span { font-size: 13px; }
+.home-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.home-card { border: 1px solid #dbe5f2; border-radius: 12px; background: #fff; padding: 18px; min-width: 0; }
+.home-overview button { cursor: pointer; font: inherit; }
+.home-metric { display: flex; align-items: center; gap: 12px; padding: 16px; text-align: left; color: #0f172a; }
+.home-metric-label { display: block; font-size: 13px; font-weight: 650; }
+.home-metric strong { display: block; font-size: 28px; line-height: 1.4; }
+.home-metric small { display: block; font-size: 11px; }
+.home-dot { width: 34px; height: 34px; border-radius: 50%; background: #dbeafe; flex-shrink: 0; }
+.home-dot.muted { background: #edf2f8; }
+.home-arrow { margin-left: auto; align-self: flex-start; color: #2563eb; }
+.home-member-link { transition: border-color 160ms ease, box-shadow 160ms ease; }
+.home-member-link:hover { border-color: #2563eb; box-shadow: 0 4px 16px #2563eb0d; }
+.home-load-error button { border: 1px solid #cbd5e1; background: white; padding: 10px 16px; border-radius: 8px; min-height: 42px; font-size: 13px; color: #334155; }
+.home-panels { margin-top: 20px; display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 18px; }
+.home-panels h2 { font-size: 17px; font-weight: 650; letter-spacing: -.5px; }
+.home-panel-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.home-period { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #64748b; }
+.home-period select { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; cursor: not-allowed; }
+.home-chart-placeholder { min-height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 8px; }
+.home-chart-icon { width: 38px; height: 38px; color: #94a3b8; margin-bottom: 8px; }
+.home-panels h3 { font-size: 14px; font-weight: 500; color: #475569; }
+.home-panels p { font-size: 13px; line-height: 1.6; }
+.home-unavailable { margin-top: 6px; }
+.home-balance { padding: 16px 0; margin-top: 8px; border-bottom: 1px solid #e2e8f0; }
+.home-balance span, .home-money span { font-size: 13px; color: #64748b; }
+.home-balance strong { display: block; font-size: 32px; }
+.home-money { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 0; }
+.home-money strong { display: block; font-size: 22px; }
+.home-event-head { display: grid; grid-template-columns: 2fr 1fr 1fr; margin-top: 22px; padding: 12px; border-radius: 6px; background: #edf2f8; font-size: 12px; font-weight: 600; }
+.home-empty { min-height: 110px; display: flex; flex-direction: column; justify-content: center; gap: 8px; text-align: center; }
+.home-load-error { margin: 16px 0; }
+.home-load-error button { margin-top: 12px; }
+@media (max-width: 1200px) { .home-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 950px) { .home-panels { grid-template-columns: 1fr; } }
+@media (max-width: 480px) {
+  .home-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .home-metric { position: relative; display: block; padding: 14px; }
+  .home-metric .home-dot { margin-bottom: 10px; }
+  .home-metric-label { font-size: 12px; }
+  .home-arrow { position: absolute; right: 12px; top: 12px; }
+  .home-card { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { .home-member-link { transition: none; } }
+
+.home-dot { display: inline-flex; align-items: center; justify-content: center; color: #2563eb; }
+.home-dot svg { width: 18px; height: 18px; }
+.home-dot.calendar { background: #f0edff; color: #6d4bc3; }
+.home-dot.active { background: #eaf6ef; color: #26734d; }
+.home-dot.inactive { background: #f1f5f9; color: #64748b; }

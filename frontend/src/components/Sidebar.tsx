@@ -11,13 +11,14 @@ export type ClubSelectorProps = {
   onCreateClub: () => void;
   onJoinClub: () => void;
   onHome: () => void;
+  onMembers: () => void;
   onSettings: () => void;
-  activeView: "home" | "create" | "join" | "settings";
+  activeView: "home" | "create" | "join" | "settings" | "members";
 };
 
 /** Shared club selector and navigation. Home and Settings are available to every signed-in user. */
 export default function Sidebar({
-  clubs, selectedClubId, onSelectClub, clubsLoading, clubsError, onRetryClubs, onCreateClub, onJoinClub, onHome, onSettings, activeView,
+  clubs, selectedClubId, onSelectClub, clubsLoading, clubsError, onRetryClubs, onCreateClub, onJoinClub, onHome, onMembers, onSettings, activeView,
 }: ClubSelectorProps) {
   const dropdown = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -108,20 +109,20 @@ export default function Sidebar({
               aria-current={activeView === "home" ? "page" : undefined}
               onClick={onHome}
             >
-              Home
+              <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>Home
+            </button>
+            <button className={`nav-item ${activeView === "members" ? "nav-item-active" : ""}`} type="button" onClick={onMembers} aria-current={activeView === "members" ? "page" : undefined}>
+              <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3" /><path d="M3 20v-2a6 6 0 0 1 12 0v2m1-15a3 3 0 0 1 0 6m3 9v-2a6 6 0 0 0-2-4" /></svg>Members
             </button>
             <button className="nav-item" type="button" disabled>
-              Members <span>Coming soon</span>
+              <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M8 3v4m8-4v4M4 11h16M8 15h2m4 0h2m-8 3h2" /></svg>Events <span>Coming soon</span>
             </button>
             <button className="nav-item" type="button" disabled>
-              Events <span>Coming soon</span>
-            </button>
-            <button className="nav-item" type="button" disabled>
-              Finance <span>Coming soon</span>
+              <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 8V6a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14v10H6a3 3 0 0 1-3-3V7" /><path d="M20 12h-5a2 2 0 0 0 0 4h5" /></svg>Finance <span>Coming soon</span>
             </button>
           </nav>
             <button className={`nav-item club-settings-button ${activeView === "settings" ? "nav-item-active" : ""}`} type="button" onClick={onSettings} aria-current={activeView === "settings" ? "page" : undefined}>
-              Settings
+              <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h3m6 0h7M4 17h9m6 0h1" /><circle cx="10" cy="7" r="3" /><circle cx="16" cy="17" r="3" /></svg>Settings
             </button>
         </aside>
   );
