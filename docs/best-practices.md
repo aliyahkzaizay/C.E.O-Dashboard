@@ -126,6 +126,17 @@ Verification limit:
 
 - Simulated responses do not prove that live Supabase policies or production email delivery work correctly.
 
+### 8. Linting System
+
+Use PyLint
+
+
+Evidence:
+
+
+Verification limit:
+
+
 Missing:
 
 - A dated final-release run of the relevant tests.
