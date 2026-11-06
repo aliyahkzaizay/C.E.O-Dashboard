@@ -9,6 +9,7 @@ import DashboardLayout from "../components/DashboardLayout";
 import "./Dashboard.css";
 import Members from "./Members";
 import Home from "./Home";
+import Events from "./Events";
 
 type DashboardProps = {
   fullName: string; accountCreatedAt: string;
@@ -45,13 +46,13 @@ export default function Dashboard({ userId, email, fullName, accountCreatedAt, o
 
   return (
     <DashboardLayout
-      title={activeView === "members" ? "Members" : activeView === "settings" ? "Settings" : activeView === "join" ? "Join a club" : activeView === "create" ? "Create a club" : `Welcome${fullName.trim() ? `, ${fullName.trim().split(/\s+/)[0]}` : ""}`}
+      title={activeView === "members" ? "Members" : activeView === "events" ? "Events" : activeView === "settings" ? "Settings" : activeView === "join" ? "Join a club" : activeView === "create" ? "Create a club" : `Welcome${fullName.trim() ? `, ${fullName.trim().split(/\s+/)[0]}` : ""}`}
       clubSelector={{
         clubs, selectedClubId: selectedClub?.organization_id ?? null,
-        onSelectClub: id => show(activeView === "members" || activeView === "settings" ? activeView : "home", id),
+        onSelectClub: id => show(activeView === "members" || activeView === "settings" || activeView === "events" ? activeView : "home", id),
         clubsLoading: isLoading, clubsError, onRetryClubs: retry,
         onCreateClub: () => show("create"), onJoinClub: () => show("join"),
-        onHome: () => show("home"), onMembers: () => show("members"), onSettings: () => show("settings"), activeView,
+        onHome: () => show("home"), onMembers: () => show("members"), onEvents: () => show("events"), onSettings: () => show("settings"), activeView,
       }}
       headerActions={activeView === "home" && !isLoading && !clubsError && selectedClub ? <><button className="dashboard-add-member" type="button" onClick={() => { show("members"); setMemberFormOpen(true); }}>+ Add member</button>{selectedClub.access_role === "owner" && <button type="button" onClick={() => { show("settings"); setFocusInvitations(true); }}>Invite officer</button>}</> : undefined}
       email={email} onSignOut={onSignOut} isSigningOut={isSigningOut}
@@ -59,6 +60,8 @@ export default function Dashboard({ userId, email, fullName, accountCreatedAt, o
       {error && <p role="alert">{error}</p>}
       {activeView === "members" ? (
         isLoading ? <p role="status">Loading your clubs…</p> : clubsError ? <section className="dashboard-welcome"><p role="alert">{clubsError}</p><button className="club-retry" onClick={retry}>Retry</button></section> : selectedClub ? <Members key={selectedClub.organization_id} club={selectedClub} initiallyAdding={memberFormOpen} /> : <section className="dashboard-welcome"><h2>Select a club to view members</h2><p>Create a club or accept an invitation to get started.</p><div className="welcome-club-actions"><button onClick={() => show("create")}>Create a club</button><button onClick={() => show("join")}>Join a club</button></div></section>
+            ) : activeView === "events" ? (
+        isLoading ? <p role="status">Loading your clubs…</p> : clubsError ? <section className="dashboard-welcome"><p role="alert">{clubsError}</p><button className="club-retry" onClick={retry}>Retry</button></section> : selectedClub ? <Events key={selectedClub.organization_id} club={selectedClub} /> : <section className="dashboard-welcome"><h2>Select a club to view events</h2><p>Create a club or accept an invitation to get started.</p><div className="welcome-club-actions"><button onClick={() => show("create")}>Create a club</button><button onClick={() => show("join")}>Join a club</button></div></section>
       ) : activeView === "create" ? (
         <CreateClubForm onCancel={() => show("home")} onCreated={id => {
           show("home", id); setMessage("Club created. You are its owner."); retry();
