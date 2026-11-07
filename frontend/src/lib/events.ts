@@ -18,8 +18,7 @@ export type EventAction = "open-checkin" | "close-checkin" | "cancel" | "archive
 /**
  * Send the current session token to Python; never retry a write automatically.
  * NOTE: the events router has no organization in the URL. It resolves the org
- * via get_officer_org_id. If that dependency reads something other than the
- * X-Organization-Id header, change it here (only place).
+ * via get_officer_org_id, which reads the X-Org-Id header (currently a stub).
  */
 async function request<T>(organizationId: string, options: RequestInit, path = ""): Promise<T> {
   const { data, error } = await getSupabase().auth.getSession();
@@ -32,7 +31,7 @@ async function request<T>(organizationId: string, options: RequestInit, path = "
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${data.session.access_token}`,
-        "X-Organization-Id": organizationId,
+        "X-Org-Id": organizationId,
       },
     });
   } catch (error) {
