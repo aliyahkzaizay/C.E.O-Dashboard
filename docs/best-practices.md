@@ -60,21 +60,17 @@ These examples show existing usage; they do not establish that every file follow
 
 ### 5. Object-Oriented Design
 
-Confirmed example:
+Confirmed examples:
 
-- Inheritance: MemberUpdate extends MemberCreate and reuses its fields and validation behavior while defining partial-edit rules.
+- **Inheritance:** `MemberUpdate` extends `MemberCreate`, reusing its fields and validation while adding rules for partial edits. [Member schema classes](../backend/app/schemas/members.py)
+- **Abstraction:** `build_summary()` combines member engagement, event popularity, and monthly attendance calculations. Calling code asks for one summary without having to coordinate each calculation itself. This is function-level abstraction. [Dashboard summary code](https://github.com/aliyahkzaizay/C.E.O-Dashboard/blob/aaa7ac4acaf3783d8763d68b4d13187c17325d11/backend/app/analytics/summary.py#L33)
+- **Encapsulation:** `ReportingPeriod` keeps start/end dates and their rules together. It checks that the start comes before the end, and `contains()` checks whether a date is within the range (including the start, excluding the end). Its frozen dataclass prevents normal reassignment after creation, helping preserve that valid range. The dates remain publicly readable. [ReportingPeriod class](https://github.com/aliyahkzaizay/C.E.O-Dashboard/blob/aaa7ac4acaf3783d8763d68b4d13187c17325d11/backend/app/analytics/periods.py#L8)
 
-Evidence:
-
-- [Member schema classes](../backend/app/schemas/members.py)
+The analytics links point to the reviewed commit from PR #11.
 
 Missing:
 
-- Documented examples of abstraction.
-- Documented examples of encapsulation.
-- Documented examples of polymorphism.
-
-Each example must identify the actual code and explain how the concept is used. Examples must not be claimed without verification.
+- A verified, documented example of polymorphism.
 
 ## Selected Optional Practices
 
@@ -106,9 +102,6 @@ Evidence:
 - [Test dependencies](../backend/requirements-dev.in)
 - [Testing records](../testing/README.md)
 
-Missing:
-
-- A dated test report covering these unit tests on the final-release commit, including failures or limitations.
 
 ### 8. Mock Objects in Tests
 
