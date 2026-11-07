@@ -4,9 +4,21 @@ A dashboard for organization membership, events, attendance, engagement, and bas
 
 ## Current Status
 
-The repository now has separate `frontend/`, `backend/`, and `supabase/` directories. The React + TypeScript + Vite starter includes Tailwind, React Router, and a shared Supabase browser client at `frontend/src/lib/supabase.ts`. The Python 3.13/FastAPI backend exposes `/api/health` and interactive API documentation.
+C.E.O. is in active development. The React frontend and FastAPI backend run locally, with Supabase providing authentication and PostgreSQL storage.
 
-Feature pages, officer login flows, native check-in, finance, and database migrations are not implemented yet. The scaffold runs without Supabase credentials; inspect the remote database before creating the migration baseline.
+| Area | Status |
+| --- | --- |
+| Accounts and clubs | Sign-up/sign-in, club creation, club selection, officer invitations through Resend, and account settings are implemented. |
+| Members | Add, edit, search, paginate, and view members. CSV/XLSX imports include column mapping, row previews, validation, and duplicate checks. Member archive/restore remains pending. |
+| Events | The [merged Events implementation](https://github.com/aliyahkzaizay/C.E.O-Dashboard/pull/12) includes Supabase storage, officer access checks, create/edit/list views, cancellation, archiving, and check-in open/close and finalization controls. |
+| Check-in and attendance | The native check-in page currently uses simulated responses. Real attendance saving, matching, duplicate prevention, and member-history integration remain pending. Event controls alone do not implement attendance processing. |
+| Dashboard and analytics | Home and Members screens are implemented. [Engagement calculations](https://github.com/aliyahkzaizay/C.E.O-Dashboard/pull/11) are written; connecting them to live attendance data, API endpoints, and dashboard displays remains pending. |
+| Finance and deployment | Basic finance and production hosting remain planned. |
+| Automated checks | [GitHub Actions](.github/workflows/ci.yml) runs backend tests, frontend lint, and the production build for PRs into `main`, pushes to `main`, and manual runs. |
+
+**Verification:** Member imports and event saving have been confirmed in development Supabase. Automated tests use simulated services where configured; they do not prove live database policies or production behavior. Live cross-club event access checks remain pending. See [testing records](testing/README.md) and [CI run history](https://github.com/aliyahkzaizay/C.E.O-Dashboard/actions/workflows/ci.yml) for evidence and limitations.
+
+**Database setup:** Reviewed SQL migrations are stored in `supabase/migrations/`. Apply the required migrations to the target database; pulling repository changes does not automatically apply them. The existing organization tables and access setup are prerequisites.
 
 **New teammate? Start with the [simple setup guide](docs/team-setup.md).**
 
