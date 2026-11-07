@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
-export type DashboardView = "home" | "members" | "settings" | "create" | "join";
-const views: DashboardView[] = ["home", "members", "settings", "create", "join"];
+export type DashboardView = "home" | "members" | "events"| "settings" | "create" | "join";
+const views: DashboardView[] = ["home", "members", "events", "settings", "create", "join"];
 
 /** Read only supported pages. A club ID is a selection, never permission to access it. */
 function readNavigation(): { view: DashboardView; clubId: string | null } {
