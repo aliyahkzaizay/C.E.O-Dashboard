@@ -1,0 +1,71 @@
+name: Branch Checks into Main
+
+# Run when a PR targets main or changes are pushed to main.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+# Allows manual runs from GitHub’s Actions tab
+  workflow_dispatch:
+  
+
+# The workflow only needs permission to read the repository.
+permissions:
+  contents: read
+
+# What checks to run
+jobs:
+  backend:
+    # Set up Python, install dependencies, run pytest
+    runs-on: ubuntu-latest # Run this job on a GitHub-hosted Ubuntu Linux machine.
+    timeout-minutes: 15 # Stop the job if it takes longer than 15 minutes.
+
+    defaults: #Set shared settings for this job.
+      run:
+        working-directory: backend
+
+    steps: # lists the actions performed in order
+      - name: Download repository code
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: backend/.python-version
+
+      - name: Install backend dependencies
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Run backend tests
+        run: python -m pytest -q
+
+
+  frontend:
+    # Set up Node.js, install dependencies, run lint and build
+    
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Download repository code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run lint checks
+        run: npm run lint
+
+      - name: Check TypeScript and build frontend
+        run: npm run build
