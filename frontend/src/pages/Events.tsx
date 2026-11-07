@@ -1,61 +1,51 @@
-import { useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { Club } from "../hooks/useClubs";
-import { createEvent, eventAction, listEvents, updateEvent } from "../lib/events";
+import { eventAction, listEvents } from "../lib/events";
 import type { CeoEvent, EventAction, EventPage } from "../lib/events";
-import "./Members.css";
+import EventForm from "../components/EventForm";
+import "./Events.css";
 
 const PAGE_SIZE = 20;
 
-/** ISO string -> value for <input type="datetime-local"> in local time. */
-function toLocalInput(iso: string) {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+type RowActionsProps = {
+  event: CeoEvent;
+  disabled: boolean;
+  onEdit: () => void;
+  onAction: (action: EventAction, message: string) => void;
+};
 
-function EventForm({ event, organizationId, onCancel, onSaved }: { event?: CeoEvent; organizationId: string; onCancel: () => void; onSaved: () => void }) {
-  const [name, setName] = useState(event?.event_name ?? "");
-  const [type, setType] = useState(event?.event_type ?? "");
-  const [startsAt, setStartsAt] = useState(event ? toLocalInput(event.starts_at) : "");
-  const [description, setDescription] = useState(event?.description ?? "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+/** Keep secondary actions in a keyboard-accessible, light-dismiss popover. */
+function EventRowActions({ event, disabled, onEdit, onAction }: RowActionsProps) {
+  const id = useId();
+  const popover = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const canCheckIn = event.status !== "cancelled" && !event.attendance_finalized_at;
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (saving) return;
-    if (!name.trim() || !startsAt) { setError("Name and start time are required."); return; }
-    setSaving(true);
-    setError("");
-    try {
-      const values = {
-        event_name: name.trim(),
-        event_type: type.trim() || null,
-        description: description.trim() || null,
-        starts_at: new Date(startsAt).toISOString(),
-      };
-      if (event) await updateEvent(organizationId, event.event_id, values);
-      else await createEvent(organizationId, values);
-      onSaved();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to save event.");
-      setSaving(false);
-    }
+  function close() { popover.current?.hidePopover(); trigger.current?.focus(); }
+  function act(action: EventAction, message: string, question?: string) {
+    close();
+    if (!question || window.confirm(question)) onAction(action, message);
   }
-
-  return <form className="member-card" onSubmit={submit} aria-label={event ? "Edit event" : "Add event"}>
-    <h3>{event ? "Edit event" : "Add event"}</h3>
-    <label>Name<input value={name} maxLength={200} onChange={e => setName(e.target.value)} required autoFocus /></label>
-    <label>Starts at<input type="datetime-local" value={startsAt} onChange={e => setStartsAt(e.target.value)} required /></label>
-    <label>Type (optional)<input value={type} maxLength={50} onChange={e => setType(e.target.value)} /></label>
-    <label>Description (optional)<textarea value={description} maxLength={2000} rows={3} onChange={e => setDescription(e.target.value)} /></label>
-    {error && <p role="alert">{error}</p>}
-    <div className="member-roster-actions">
-      <button type="button" onClick={onCancel} disabled={saving}>Cancel</button>
-      <button className="member-primary" type="submit" disabled={saving}>{saving ? "Saving…" : "Save event"}</button>
+  if (event.archived_at) return <span className="event-muted">—</span>;
+  return <>
+    <button ref={trigger} type="button" className="event-more" disabled={disabled}
+      popoverTarget={id} aria-label={`Actions for ${event.event_name}`}
+      onClick={() => {
+        const rect = trigger.current?.getBoundingClientRect();
+        if (rect && popover.current) {
+          popover.current.style.left = `${Math.max(8, Math.min(rect.right - 220, window.innerWidth - 228))}px`;
+          popover.current.style.top = `${Math.max(8, Math.min(rect.bottom + 6, window.innerHeight - 290))}px`;
+        }
+      }}><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+    <div ref={popover} id={id} popover="auto" className="event-action-popover" aria-label={`Actions for ${event.event_name}`}>
+      <button type="button" onClick={() => { close(); onEdit(); }}>Edit event</button>
+      {canCheckIn && <button type="button" onClick={() => act(event.check_in_open ? "close-checkin" : "open-checkin", event.check_in_open ? "Check-in closed." : "Check-in opened.")}>{event.check_in_open ? "Close check-in" : "Open check-in"}</button>}
+      {canCheckIn && !event.check_in_open && <button type="button" onClick={() => act("finalize-attendance", "Attendance finalized.", `Finalize attendance for "${event.event_name}"? Check-in cannot be reopened with the current controls.`)}>Finalize attendance</button>}
+      <hr />
+      {event.status !== "cancelled" && <button className="event-danger" type="button" onClick={() => act("cancel", "Event cancelled.", `Cancel "${event.event_name}"? Check-in will close.`)}>Cancel event</button>}
+      <button className="event-danger" type="button" onClick={() => act("archive", "Event archived.", `Archive "${event.event_name}"? It will leave the current list and can no longer be edited.`)}>Archive event</button>
     </div>
-  </form>;
+  </>;
 }
 
 /** Display only the selected club's events; parent keys this page by club ID. */
@@ -69,6 +59,7 @@ export default function Events({ club }: { club: Club }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [actionError, setActionError] = useState("");
+  const actionInFlight = useRef(false);
   const addButton = useRef<HTMLButtonElement>(null);
 
   const key = JSON.stringify([offset, attempt, showArchived]);
@@ -98,6 +89,8 @@ export default function Events({ club }: { club: Club }) {
   function closeForm() { setAdding(false); setEditing(null); addButton.current?.focus(); }
 
   async function run(event: CeoEvent, action: EventAction, message: string) {
+    if (actionInFlight.current) return;
+    actionInFlight.current = true;
     setBusyId(event.event_id);
     setActionError("");
     try {
@@ -107,6 +100,7 @@ export default function Events({ club }: { club: Club }) {
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Action failed.");
     } finally {
+      actionInFlight.current = false;
       setBusyId(null);
     }
   }
@@ -118,51 +112,42 @@ export default function Events({ club }: { club: Club }) {
     return e.check_in_open ? "Check-in open" : "Scheduled";
   }
 
-  return <div className="members-page">
-    <section className="member-card member-roster" aria-labelledby="events-heading">
-      <div className="member-section-heading">
-        <div><h2 id="events-heading">Events</h2><p>{club.organization_name}</p></div>
-        <div className="member-roster-actions">
-          <label><input type="checkbox" checked={showArchived} onChange={e => { setShowArchived(e.target.checked); setOffset(0); }} /> Show archived</label>
-          <button ref={addButton} className="member-primary" type="button" aria-expanded={adding} onClick={() => { setEditing(null); setAdding(true); setNotice(""); }}>+ Add event</button>
+  return <div className="events-page">
+    <section className="events-card" aria-labelledby="events-heading">
+      <div className="events-heading">
+        <div><h2 id="events-heading">Club events</h2><p>{club.organization_name}</p></div>
+        <div className="events-toolbar">
+          <label className="events-archive-filter"><input type="checkbox" checked={showArchived} onChange={e => { setShowArchived(e.target.checked); setOffset(0); }} /> Show archived</label>
+          <button ref={addButton} className="event-primary" type="button" disabled={adding || !!editing || !!busyId} aria-expanded={adding} onClick={() => { setEditing(null); setAdding(true); setNotice(""); }}><span aria-hidden="true">+</span> Create event</button>
         </div>
       </div>
 
       {(adding || editing) && <EventForm key={editing?.event_id ?? "new"} event={editing ?? undefined} organizationId={club.organization_id} onCancel={closeForm} onSaved={() => { const wasEditing = !!editing; closeForm(); setAttempt(n => n + 1); setNotice(wasEditing ? "Event updated." : "Event added."); }} />}
-      {notice && <p className="member-success" role="status">{notice}</p>}
-      {actionError && <p role="alert">{actionError}</p>}
+      {notice && <p className="event-notice event-success" role="status">{notice}</p>}
+      {actionError && <p className="event-notice event-error" role="alert">{actionError}</p>}
 
       <div aria-busy={loading}>
-        {loading ? <p className="member-empty" role="status">Loading events…</p>
-          : current?.error ? <div className="member-empty"><p role="alert">{current.error}</p><button type="button" onClick={() => setAttempt(n => n + 1)}>Retry</button></div>
-          : data && data.total === 0 ? <div className="member-empty"><h3>No events yet</h3><p>Add your first event to start tracking attendance.</p></div>
+        {loading ? <p className="event-empty" role="status">Loading events…</p>
+          : current?.error ? <div className="event-empty"><p role="alert">{current.error}</p><button type="button" onClick={() => setAttempt(n => n + 1)}>Retry</button></div>
+          : data && data.total === 0 ? <div className="event-empty"><div className="event-empty-icon" aria-hidden="true">▦</div><h3>No events yet</h3><p>Create your first event to get started.</p></div>
           : data && <>
-            <div className="member-table-scroll" tabIndex={0} role="region" aria-label="Events table">
+            <div className="event-table-scroll" tabIndex={0} role="region" aria-label="Events table">
               <table>
-                <thead><tr><th>Name</th><th>Date</th><th>Type</th><th>Status</th><th scope="col">Actions</th></tr></thead>
+                <thead><tr><th scope="col">Event</th><th scope="col">Date &amp; time</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col" className="event-actions-cell"><span className="events-sr-only">Actions</span></th></tr></thead>
                 <tbody>{data.items.map(e => {
-                  const busy = busyId === e.event_id;
-                  const locked = !!e.archived_at;
-                  const canCheckIn = !locked && e.status !== "cancelled" && !e.attendance_finalized_at;
                   return <tr key={e.event_id}>
-                    <td className="member-name">{e.event_name}</td>
-                    <td>{new Date(e.starts_at).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })}</td>
+                    <td className="event-name">{e.event_name}</td>
+                    <td className="event-date"><time dateTime={e.starts_at}>{new Date(e.starts_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}<small>{new Date(e.starts_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}</small></time></td>
                     <td>{e.event_type ?? "—"}</td>
-                    <td><span className="member-badge">{statusLabel(e)}</span></td>
-                    <td>
-                      {!locked && <button type="button" disabled={busy} onClick={() => { setAdding(false); setEditing(e); setNotice(""); }}>Edit</button>}
-                      {canCheckIn && (e.check_in_open
-                        ? <button type="button" disabled={busy} onClick={() => run(e, "close-checkin", "Check-in closed.")}>Close check-in</button>
-                        : <button type="button" disabled={busy} onClick={() => run(e, "open-checkin", "Check-in opened.")}>Open check-in</button>)}
-                      {canCheckIn && !e.check_in_open && <button type="button" disabled={busy} onClick={() => run(e, "finalize-attendance", "Attendance finalized.")}>Finalize attendance</button>}
-                      {!locked && e.status !== "cancelled" && <button type="button" disabled={busy} onClick={() => { if (window.confirm(`Cancel "${e.event_name}"?`)) void run(e, "cancel", "Event cancelled."); }}>Cancel event</button>}
-                      {!locked && <button type="button" disabled={busy} onClick={() => { if (window.confirm(`Archive "${e.event_name}"? It can't be edited afterward.`)) void run(e, "archive", "Event archived."); }}>Archive</button>}
-                    </td>
+                    <td><span className={`event-badge ${e.archived_at ? "archived" : e.status === "cancelled" ? "cancelled" : e.attendance_finalized_at ? "finalized" : e.check_in_open ? "open" : "scheduled"}`}>{statusLabel(e)}</span></td>
+                    <td className="event-actions-cell"><EventRowActions event={e} disabled={!!busyId || adding || !!editing}
+                      onEdit={() => { setAdding(false); setEditing(e); setNotice(""); }}
+                      onAction={(action, message) => { void run(e, action, message); }} /></td>
                   </tr>;
                 })}</tbody>
               </table>
             </div>
-            <div className="member-pagination">
+            <div className="event-pagination">
               <p>{offset + 1}–{offset + data.items.length} of {data.total} events</p>
               <div>
                 <button type="button" disabled={offset === 0} onClick={() => setOffset(n => Math.max(0, n - PAGE_SIZE))}>Previous</button>

@@ -54,7 +54,7 @@ export default function Dashboard({ userId, email, fullName, accountCreatedAt, o
         onSelectClub: id => show(activeView === "members" || activeView === "settings" || activeView === "events" ? activeView : "home", id),
         clubsLoading: isLoading, clubsError, onRetryClubs: retry,
         onCreateClub: () => show("create"), onJoinClub: () => show("join"),
-        onHome: () => show("home"), onMembers: () => show("members"), onSettings: () => show("settings"), activeView: activeView === "events" ? "home" : activeView,
+        onHome: () => show("home"), onMembers: () => show("members"), onEvents: () => show("events"), onSettings: () => show("settings"), activeView,
       }}
       headerActions={activeView === "home" && !isLoading && !clubsError && selectedClub ? <><button className="dashboard-add-member" type="button" onClick={() => { show("members"); setMemberFormOpen(true); }}>+ Add member</button>{selectedClub.access_role === "owner" && <button type="button" onClick={() => { show("settings"); setFocusInvitations(true); }}>Invite officer</button>}</> : undefined}
       email={email} onSignOut={onSignOut} isSigningOut={isSigningOut}
