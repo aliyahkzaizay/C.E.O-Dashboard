@@ -78,7 +78,7 @@ Each example must identify the actual code and explain how the concept is used. 
 
 ## Selected Optional Practices
 
-The course requires at least three optional practices. We are collecting evidence for the following three.
+The course requires at least three optional practices. We are collecting evidence for the practices below.
 
 ### 6. Build Tools
 
@@ -126,20 +126,42 @@ Verification limit:
 
 - Simulated responses do not prove that live Supabase policies or production email delivery work correctly.
 
-### 8. Linting System
+### 9. Linting System
 
-Use PyLint
-
+The frontend uses Oxlint through `npm run lint` to flag coding problems. The CI workflow runs this check automatically. PyLint is not configured in this workflow.
 
 Evidence:
 
+- [Frontend lint command](../frontend/package.json)
+- [Oxlint configuration](../frontend/.oxlintrc.json)
+- [CI workflow](../.github/workflows/ci.yml)
 
-Verification limit:
+
+### 10. Continuous Integration (CI)
+
+GitHub Actions runs checks when a pull request targets `main`, when changes are pushed to `main`, or when someone starts the workflow manually.
+
+The workflow has two jobs:
+
+- **Backend:** Install Python dependencies and run the pytest suite with `python -m pytest -q`.
+- **Frontend:** Install dependencies with `npm ci`, run Oxlint with `npm run lint`, and check TypeScript/build the app with `npm run build`.
+
+Each job runs on a temporary Ubuntu machine with a 15-minute timeout. These checks help catch errors before merging. They block a merge only when required by the repository rules and not bypassed.
+
+Evidence:
+
+- [CI workflow](../.github/workflows/ci.yml)
+- [GitHub Actions run history](https://github.com/aliyahkzaizay/C.E.O-Dashboard/actions/workflows/ci.yml)
+- [Backend test suite](../backend/tests)
+- [Frontend check commands](../frontend/package.json)
+
+Verification limits:
+
+- Backend tests use simulated Supabase and Resend responses where configured; they do not verify live database policies or real email delivery.
+- The frontend checks do not run browser interaction tests.
+- A workflow file alone does not prove the checks passed.
 
 
-Missing:
-
-- A dated final-release run of the relevant tests.
 
 ## Final Submission Review
 
