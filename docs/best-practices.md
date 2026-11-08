@@ -85,7 +85,7 @@ Command: `npm run build`
 Evidence:
 
 - [Frontend build configuration](../frontend/package.json)
-- [Recorded build verification](../testing/member-details.md)
+- [Build-check instructions](../testing/members.md#automated-checks)
 
 Missing:
 
@@ -100,7 +100,7 @@ Evidence:
 - [Import cleaning unit tests](../backend/tests/test_import_cleaning.py)
 - [Import validation tests](../backend/tests/test_import_validation.py)
 - [Test dependencies](../backend/requirements-dev.in)
-- [Testing records](../testing/README.md)
+- [Testing guides](../testing/README.md)
 
 
 ### 8. Mock Objects in Tests
@@ -113,7 +113,7 @@ Evidence:
 
 - [Supabase and Resend invitation tests](../backend/tests/test_invitations.py)
 - [Mocked member API tests](../backend/tests/test_members.py)
-- [Recorded member test results](../testing/member-details.md)
+- [Member testing guide and verification limits](../testing/members.md#automated-checks)
 
 Verification limit:
 
