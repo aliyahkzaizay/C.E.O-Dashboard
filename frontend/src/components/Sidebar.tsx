@@ -13,13 +13,14 @@ export type ClubSelectorProps = {
   onHome: () => void;
   onMembers: () => void;
   onEvents: () => void;
+  onFinance: () => void;
   onSettings: () => void;
-  activeView: "home" | "create" | "join" | "settings" | "members"| "events";
+  activeView: "home" | "create" | "join" | "settings" | "members"| "events" | "finance";
 };
 
 /** Shared club selector and navigation. Home and Settings are available to every signed-in user. */
 export default function Sidebar({
-  clubs, selectedClubId, onSelectClub, clubsLoading, clubsError, onRetryClubs, onCreateClub, onJoinClub, onHome, onMembers, onEvents, onSettings, activeView,
+  clubs, selectedClubId, onSelectClub, clubsLoading, clubsError, onRetryClubs, onCreateClub, onJoinClub, onHome, onMembers, onEvents, onFinance, onSettings, activeView,
 }: ClubSelectorProps) {
   const dropdown = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -118,8 +119,8 @@ export default function Sidebar({
             <button className={`nav-item ${activeView === "events" ? "nav-item-active" : ""}`} type="button" onClick={onEvents} aria-current={activeView === "events" ? "page" : undefined}>
               <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M8 3v4m8-4v4M4 11h16M8 15h2m4 0h2m-8 3h2" /></svg>Events
             </button>
-            <button className="nav-item" type="button" disabled>
-              <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 8V6a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14v10H6a3 3 0 0 1-3-3V7" /><path d="M20 12h-5a2 2 0 0 0 0 4h5" /></svg>Finance <span>Coming soon</span>
+            <button className={`nav-item ${activeView === "finance" ? "nav-item-active" : ""}`} type="button" onClick={onFinance} aria-current={activeView === "finance" ? "page" : undefined}>
+              <svg className="sidebar-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 8V6a2 2 0 0 0-2-2H6a3 3 0 0 0 0 6h14v10H6a3 3 0 0 1-3-3V7" /><path d="M20 12h-5a2 2 0 0 0 0 4h5" /></svg>Finance
             </button>
           </nav>
             <button className={`nav-item club-settings-button ${activeView === "settings" ? "nav-item-active" : ""}`} type="button" onClick={onSettings} aria-current={activeView === "settings" ? "page" : undefined}>
