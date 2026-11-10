@@ -49,13 +49,13 @@ function EventRowActions({ event, disabled, onEdit, onAction }: RowActionsProps)
 }
 
 /** Display only the selected club's events; parent keys this page by club ID. */
-export default function Events({ club }: { club: Club }) {
+export default function Events({ club, initialEvent }: { club: Club; initialEvent?: CeoEvent | null }) {
   const [offset, setOffset] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [showArchived, setShowArchived] = useState(false);
   const [result, setResult] = useState<{ key: string; data?: EventPage; error?: string } | null>(null);
   const [adding, setAdding] = useState(false);
-  const [editing, setEditing] = useState<CeoEvent | null>(null);
+  const [editing, setEditing] = useState<CeoEvent | null>(() => initialEvent?.organization_id === club.organization_id && !initialEvent.archived_at ? initialEvent : null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [actionError, setActionError] = useState("");

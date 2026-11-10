@@ -58,12 +58,16 @@ def _event(row: dict, org_id: UUID, event_id: UUID | None = None) -> EventRespon
         raise HTTPException(502, "Invalid events response. Refresh events before trying again.") from None
 
 
-async def list_events(client, org_id: UUID, include_archived: bool, limit: int, offset: int) -> EventListResponse:
+async def list_events(client, org_id: UUID, include_archived: bool, limit: int, offset: int, upcoming: bool = False) -> EventListResponse:
     """Read a stable, paginated list scoped to one authorized club."""
     params = {"select": "*", "organization_id": f"eq.{org_id}",
               "order": "starts_at.desc,event_id.asc", "limit": str(limit), "offset": str(offset)}
-    if not include_archived:
+    if not include_archived or upcoming:
         params["archived_at"] = "is.null"
+    if upcoming:
+        # Filter in storage before pagination so the nearest events are not missed.
+        params.update(status="eq.scheduled", starts_at=f"gte.{datetime.now(timezone.utc).isoformat()}",
+                      order="starts_at.asc,event_id.asc")
     response = await _request(client, "GET", params=params, headers={"Prefer": "count=exact"})
     rows = _records(response)
     try:

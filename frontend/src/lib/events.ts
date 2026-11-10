@@ -18,7 +18,7 @@ export type EventAction = "open-checkin" | "close-checkin" | "cancel" | "archive
 /**
  * Send the current session token to Python; never retry a write automatically.
  * NOTE: the events router has no organization in the URL. It resolves the org
- * via get_officer_org_id, which reads the X-Org-Id header (currently a stub).
+ * via get_officer_org_id, which verifies officer access to the X-Org-Id club.
  */
 async function request<T>(organizationId: string, options: RequestInit, path = ""): Promise<T> {
   const { data, error } = await getSupabase().auth.getSession();
@@ -46,8 +46,8 @@ async function request<T>(organizationId: string, options: RequestInit, path = "
   return body as T;
 }
 
-export function listEvents(organizationId: string, offset: number, signal: AbortSignal, includeArchived = false, limit = 20) {
-  const params = new URLSearchParams({ limit: String(limit), offset: String(offset), include_archived: String(includeArchived) });
+export function listEvents(organizationId: string, offset: number, signal: AbortSignal, includeArchived = false, limit = 20, upcoming = false) {
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset), include_archived: String(includeArchived), upcoming: String(upcoming) });
   return request<EventPage>(organizationId, { signal }, `?${params}`);
 }
 export function createEvent(organizationId: string, event: EventInput) {
