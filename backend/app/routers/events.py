@@ -17,10 +17,10 @@ SupabaseClient = Annotated[httpx.AsyncClient, Depends(get_supabase_client)]
 
 @router.get("", response_model=EventListResponse)
 async def list_events(org_id: OfficerOrg, client: SupabaseClient,
-                      include_archived: bool = False,
+                      include_archived: bool = False, upcoming: bool = False,
                       limit: int = Query(50, ge=1, le=200), offset: int = Query(0, ge=0)):
     """List events after verifying the caller's access to the selected club."""
-    return await event_service.list_events(client, org_id, include_archived, limit, offset)
+    return await event_service.list_events(client, org_id, include_archived, limit, offset, upcoming)
 
 
 @router.post("", response_model=EventResponse, status_code=201)

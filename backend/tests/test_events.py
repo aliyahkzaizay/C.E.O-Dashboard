@@ -82,7 +82,7 @@ def test_create_and_read_saved_event(upstream, role):
 
 
 @pytest.mark.parametrize("method,path,payload", [
-    ("GET", "/api/events", None), ("POST", "/api/events", BODY), ("GET", URL, None),
+    ("GET", "/api/events", None), ("GET", "/api/events?upcoming=true", None), ("POST", "/api/events", BODY), ("GET", URL, None),
     ("PATCH", URL, {"event_name": "Changed"}),
     *[("POST", URL + "/" + action, None) for action in
       ["open-checkin", "close-checkin", "cancel", "archive", "finalize-attendance"]],
@@ -195,3 +195,21 @@ def test_save_failures_are_safe(upstream, status, expected):
     assert response.status_code == expected
     assert "private details" not in response.text
     assert sum(r.method == "POST" for r in upstream["requests"]) == 1
+
+
+@pytest.mark.parametrize("include_archived", ["true", "false"])
+def test_upcoming_filters_before_pagination(upstream, include_archived):
+    """Nearest future events use a scoped database query, regardless of archive toggle."""
+    from datetime import datetime, timezone
+    before = datetime.now(timezone.utc)
+    response = call(path=f"/api/events?upcoming=true&limit=3&include_archived={include_archived}")
+    after = datetime.now(timezone.utc)
+    assert response.status_code == 200
+    params = upstream["requests"][-1].url.params
+    assert params["organization_id"] == f"eq.{ORG}"
+    assert params["status"] == "eq.scheduled"
+    assert params["archived_at"] == "is.null"
+    assert params["order"] == "starts_at.asc,event_id.asc"
+    assert params["limit"] == "3"
+    assert params["starts_at"].startswith("gte.")
+    assert before <= datetime.fromisoformat(params["starts_at"][4:]) <= after
