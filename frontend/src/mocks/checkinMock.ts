@@ -20,3 +20,9 @@ export async function mockSubmit(_token: string, identifier: string): Promise<Ch
   if (identifier === '4444') throw new ApiError('RATE_LIMITED', 'Too many attempts.', 429)
   return { status: 'accepted', message: 'Check-in received.' }
 }
+
+export async function mockSetCheckInOpen(_token: string, isOpen: boolean) {
+  await wait()
+  if (_token === 'fail-token') throw new ApiError('SERVER_ERROR', 'Could not save.', 500)
+  return { is_open: isOpen }
+}
