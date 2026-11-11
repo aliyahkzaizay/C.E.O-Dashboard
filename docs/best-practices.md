@@ -60,25 +60,21 @@ These examples show existing usage; they do not establish that every file follow
 
 ### 5. Object-Oriented Design
 
-Confirmed example:
+Confirmed examples:
 
-- Inheritance: MemberUpdate extends MemberCreate and reuses its fields and validation behavior while defining partial-edit rules.
+- **Inheritance:** `MemberUpdate` extends `MemberCreate`, reusing its fields and validation while adding rules for partial edits. [Member schema classes](../backend/app/schemas/members.py)
+- **Abstraction:** `build_summary()` combines member engagement, event popularity, and monthly attendance calculations. Calling code asks for one summary without having to coordinate each calculation itself. This is function-level abstraction. [Dashboard summary code](https://github.com/aliyahkzaizay/C.E.O-Dashboard/blob/aaa7ac4acaf3783d8763d68b4d13187c17325d11/backend/app/analytics/summary.py#L33)
+- **Encapsulation:** `ReportingPeriod` keeps start/end dates and their rules together. It checks that the start comes before the end, and `contains()` checks whether a date is within the range (including the start, excluding the end). Its frozen dataclass prevents normal reassignment after creation, helping preserve that valid range. The dates remain publicly readable. [ReportingPeriod class](https://github.com/aliyahkzaizay/C.E.O-Dashboard/blob/aaa7ac4acaf3783d8763d68b4d13187c17325d11/backend/app/analytics/periods.py#L8)
 
-Evidence:
-
-- [Member schema classes](../backend/app/schemas/members.py)
+The analytics links point to the reviewed commit from PR #11.
 
 Missing:
 
-- Documented examples of abstraction.
-- Documented examples of encapsulation.
-- Documented examples of polymorphism.
-
-Each example must identify the actual code and explain how the concept is used. Examples must not be claimed without verification.
+- A verified, documented example of polymorphism.
 
 ## Selected Optional Practices
 
-The course requires at least three optional practices. We are collecting evidence for the following three.
+The course requires at least three optional practices. We are collecting evidence for the practices below.
 
 ### 6. Build Tools
 
@@ -106,9 +102,6 @@ Evidence:
 - [Test dependencies](../backend/requirements-dev.in)
 - [Testing records](../testing/README.md)
 
-Missing:
-
-- A dated test report covering these unit tests on the final-release commit, including failures or limitations.
 
 ### 8. Mock Objects in Tests
 
@@ -126,9 +119,42 @@ Verification limit:
 
 - Simulated responses do not prove that live Supabase policies or production email delivery work correctly.
 
-Missing:
+### 9. Linting System
 
-- A dated final-release run of the relevant tests.
+The frontend uses Oxlint through `npm run lint` to flag coding problems. The CI workflow runs this check automatically. PyLint is not configured in this workflow.
+
+Evidence:
+
+- [Frontend lint command](../frontend/package.json)
+- [Oxlint configuration](../frontend/.oxlintrc.json)
+- [CI workflow](../.github/workflows/ci.yml)
+
+
+### 10. Continuous Integration (CI)
+
+GitHub Actions runs checks when a pull request targets `main`, when changes are pushed to `main`, or when someone starts the workflow manually.
+
+The workflow has two jobs:
+
+- **Backend:** Install Python dependencies and run the pytest suite with `python -m pytest -q`.
+- **Frontend:** Install dependencies with `npm ci`, run Oxlint with `npm run lint`, and check TypeScript/build the app with `npm run build`.
+
+Each job runs on a temporary Ubuntu machine with a 15-minute timeout. These checks help catch errors before merging. They block a merge only when required by the repository rules and not bypassed.
+
+Evidence:
+
+- [CI workflow](../.github/workflows/ci.yml)
+- [GitHub Actions run history](https://github.com/aliyahkzaizay/C.E.O-Dashboard/actions/workflows/ci.yml)
+- [Backend test suite](../backend/tests)
+- [Frontend check commands](../frontend/package.json)
+
+Verification limits:
+
+- Backend tests use simulated Supabase and Resend responses where configured; they do not verify live database policies or real email delivery.
+- The frontend checks do not run browser interaction tests.
+- A workflow file alone does not prove the checks passed.
+
+
 
 ## Final Submission Review
 

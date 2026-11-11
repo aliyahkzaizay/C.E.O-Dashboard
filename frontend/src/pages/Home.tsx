@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import type { Club } from "../hooks/useClubs";
 import { listMembers } from "../lib/members";
+import { listEvents, type CeoEvent } from "../lib/events";
 import "./Home.css";
 
-type Props = { club: Club; onMembers: () => void };
+type Props = { club: Club; onMembers: () => void; onEvents: () => void; onEditEvent: (event: CeoEvent) => void };
 
 function MetricIcon({ kind }: { kind: "members" | "calendar" | "active" | "inactive" }) {
   return <span className={`home-dot ${kind}`} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -11,8 +12,45 @@ function MetricIcon({ kind }: { kind: "members" | "calendar" | "active" | "inact
   </svg></span>;
 }
 
+/** Load each event panel independently and discard responses after club changes. */
+function HomeEvents({ clubId, upcoming, onEvents, onEditEvent }: { clubId: string; upcoming: boolean; onEvents: () => void; onEditEvent: (event: CeoEvent) => void }) {
+  const [attempt, setAttempt] = useState(0);
+  const [result, setResult] = useState<{ clubId: string; attempt: number; items?: CeoEvent[]; error?: string } | null>(null);
+  const current = result?.clubId === clubId && result.attempt === attempt ? result : null;
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+    void listEvents(clubId, 0, controller.signal, false, upcoming ? 3 : 5, upcoming).then(page => {
+      if (active) setResult({ clubId, attempt, items: page.items });
+    }).catch(error => {
+      if (active) setResult({ clubId, attempt, error: error instanceof Error ? error.message : "Unable to load events." });
+    });
+    return () => { active = false; controller.abort(); };
+  }, [clubId, upcoming, attempt]);
+  return <section className={`home-card ${upcoming ? "home-upcoming" : "home-events"}`}>
+    <div className="home-panel-heading"><h2>{upcoming ? "Upcoming Events" : "Club Events"}</h2>
+      <button className="home-events-link" type="button" onClick={onEvents}>View all events <span aria-hidden="true">↗</span></button></div>
+    {!current ? <div className="home-empty" role="status">Loading events…</div>
+      : current.error ? <div className="home-empty"><p role="alert">{current.error}</p><button className="home-events-link" type="button" onClick={() => setAttempt(n => n + 1)}>Retry events</button></div>
+      : !current.items?.length ? <div className="home-empty"><h3>{upcoming ? "No upcoming events" : "No events yet"}</h3><p>{upcoming ? "Your next scheduled events will appear here." : "Create your first event on the Events page."}</p></div>
+      : <ul className="home-event-list">{current.items.map(event => {
+        const date = new Date(event.starts_at);
+        return <li key={event.event_id}>
+          <div className="home-event-date" aria-hidden="true"><span>{date.toLocaleDateString(undefined, { month: "short" })}</span><strong>{date.getDate()}</strong></div>
+          <div className="home-event-info"><h3>{event.event_name}</h3>
+            <time dateTime={event.starts_at}>{date.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" })}</time>
+            {event.event_type && <p>{event.event_type}</p>}</div>
+          {!upcoming && <span className={`home-event-status ${event.status}`}>{event.status === "cancelled" ? "Cancelled" : "Scheduled"}</span>}
+          <button className="home-edit-event" type="button" title={`Edit ${event.event_name}`} aria-label={`Edit ${event.event_name}`} onClick={() => onEditEvent(event)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m16 3 5 5-12 12-6 1 1-6L16 3Z" /><path d="m13 6 5 5" /></svg>
+          </button>
+        </li>;
+      })}</ul>}
+  </section>;
+}
+
 /** Show current roster totals and reserve unfinished reporting areas without sample data. */
-export default function Home({ club, onMembers }: Props) {
+export default function Home({ club, onMembers, onEvents, onEditEvent }: Props) {
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<{ attempt: number; total?: number; error?: string } | null>(null);
   const current = result?.attempt === attempt ? result : null;
@@ -40,8 +78,8 @@ export default function Home({ club, onMembers }: Props) {
     <div className="home-panels">
       <section className="home-card home-report"><div className="home-panel-heading"><h2>Your Attendance Report</h2><label className="home-period">Period<select disabled defaultValue="6"><option value="6">Last 6 months</option></select></label></div><div className="home-chart-placeholder"><svg className="home-chart-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 3v17h17M8 15l4-5 4 3 5-7" /><path d="M17 6h4v4" /></svg><h3>Attendance trends are on the way</h3><p>Reports will appear here when attendance analytics are connected.</p></div></section>
       <section className="home-card home-finance"><h2>Finance Summary</h2><p className="home-unavailable">Not available yet</p><div className="home-balance"><span>Current Balance</span><strong>—</strong></div><div className="home-money"><div><span>Income</span><strong>—</strong></div><div><span>Expenses</span><strong>—</strong></div></div><p>Balances will appear when finance records are connected.</p></section>
-      <section className="home-card home-events"><h2>Club Events</h2><div className="home-event-head" aria-hidden="true"><span>Event name</span><span>Date</span><span>Status</span></div><div className="home-empty"><h3>Event management is coming soon</h3><p>Your club’s events will be listed here.</p></div></section>
-      <section className="home-card home-upcoming"><h2>Upcoming Events</h2><div className="home-empty"><h3>Not available yet</h3><p>See what’s next once events are connected.</p></div></section>
+      <HomeEvents clubId={club.organization_id} upcoming={false} onEvents={onEvents} onEditEvent={onEditEvent} />
+      <HomeEvents clubId={club.organization_id} upcoming onEvents={onEvents} onEditEvent={onEditEvent} />
     </div>
   </div>;
 }
