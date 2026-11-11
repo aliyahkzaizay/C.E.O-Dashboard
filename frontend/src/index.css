@@ -49,3 +49,29 @@ html body :is(button, input, select, textarea):disabled,
 html body [aria-disabled="true"] {
   cursor: not-allowed;
 }
+
+/* Shared dashboard theme tokens. Account preferences are applied by useAppearance. */
+:root {
+  --ceo-background: #f7f9fc; --ceo-surface: #fff; --ceo-raised: #f1f5f9;
+  --ceo-text: #17243b; --ceo-muted: #59677c; --ceo-border: #dbe2ec;
+  --ceo-accent: #2563eb; --ceo-on-accent: #fff;
+  --ceo-accent-text: color-mix(in srgb, var(--ceo-accent) 60%, #000);
+  --ceo-accent-soft: color-mix(in srgb, var(--ceo-accent) 10%, var(--ceo-surface));
+  --ceo-focus: var(--ceo-accent-text);
+  --ceo-success: #166534; --ceo-success-bg: #f0fdf4;
+  --ceo-danger: #991b1b; --ceo-danger-bg: #fef2f2;
+  --ceo-warning: #92400e; --ceo-warning-bg: #fef3c7;
+  --ceo-purple: #6d4bc3; --ceo-purple-bg: #f0edff;
+}
+:root[data-theme=dark] {
+  color-scheme: dark;
+  --ceo-background: #101216; --ceo-surface: #191c22; --ceo-raised: #22262e;
+  --ceo-text: #eef1f6; --ceo-muted: #a5aebb; --ceo-border: #39414d;
+  --ceo-accent-text: color-mix(in srgb, var(--ceo-accent) 45%, #fff);
+  --ceo-success: #86dfac; --ceo-success-bg: #183528;
+  --ceo-danger: #ffaaaa; --ceo-danger-bg: #422429;
+  --ceo-warning: #f4d18a; --ceo-warning-bg: #3a3020;
+  --ceo-purple: #c6b3ff; --ceo-purple-bg: #302640;
+}
+html[data-theme] body { background: var(--ceo-background); color: var(--ceo-text); }
+.dashboard-page input, .dashboard-page select, .dashboard-page textarea { color-scheme: inherit; }
