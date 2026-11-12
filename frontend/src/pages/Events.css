@@ -34,6 +34,8 @@
 .events-page tbody tr:last-child td { border-bottom: 0; }
 .events-page tbody tr:hover { background: var(--ceo-raised); }
 .event-name { font-weight: 600; max-width: 260px; overflow-wrap: anywhere; }
+.event-share { display: grid; gap: 12px; justify-items: start; margin: 0 0 26px; outline: none; }
+.event-share .share-panel { max-width: 100%; }
 .event-date { white-space: nowrap; }
 .event-date small { display: block; margin-top: 5px; font-size: 11px; color: var(--ceo-muted); }
 .event-badge { display: inline-flex; align-items: center; white-space: nowrap; gap: 6px; padding: 5px 9px; border-radius: 6px; font-size: 11px; background: var(--ceo-raised); color: var(--ceo-muted); }
