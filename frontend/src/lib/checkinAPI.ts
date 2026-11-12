@@ -1,6 +1,6 @@
 import { ApiError } from '../types/checkin'
 import type { CheckInInfo, CheckInResult } from '../types/checkin'
-import { mockGetInfo, mockSubmit } from '../mocks/checkinMock.ts'
+import { mockGetInfo, mockSubmit, mockSetCheckInOpen } from '../mocks/checkinMock.ts'
 
 const USE_MOCKS = true // TODO Ticket C: set to false when the real API exists
 
@@ -31,4 +31,10 @@ export function submitCheckIn(token: string, identifier: string): Promise<CheckI
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ identifier }),
   })
+}
+
+export function setCheckInOpen(token: string, isOpen: boolean): Promise<{ is_open: boolean }> {
+  if (USE_MOCKS) return mockSetCheckInOpen(token, isOpen)
+  // TODO: confirm the real endpoint and method with Teammate 3
+  return request(`/api/check-ins/${encodeURIComponent(token)}/open`, { /* ... */ })
 }

@@ -1,0 +1,22 @@
+.appearance-settings{margin-top:28px;padding-top:24px;border-top:1px solid var(--ceo-border)}
+.appearance-options{display:flex;gap:40px;flex-wrap:wrap;margin-top:18px}
+.appearance-options fieldset{border:0;padding:0;margin:0;min-width:0}
+.appearance-options legend{font-size:14px;font-weight:600;margin-bottom:10px}
+.appearance-choices{display:flex;gap:8px;flex-wrap:wrap}
+.appearance-settings button{font:inherit;border:1px solid var(--ceo-border);border-radius:8px;padding:10px 14px;background:var(--ceo-surface);color:var(--ceo-text);min-height:44px}
+.appearance-settings button[aria-pressed=true]{border-color:var(--ceo-accent-text);box-shadow:0 0 0 1px var(--ceo-accent-text);background:var(--ceo-accent-soft)}
+.appearance-settings .appearance-swatch{width:44px;height:44px;padding:6px;border-radius:50%}
+.appearance-swatch>span{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.appearance-rainbow{background:conic-gradient(red,#ff0,#0f0,cyan,blue,magenta,red);color:white}
+.appearance-rainbow svg{filter:drop-shadow(0 1px 2px #000)}
+.appearance-picker{max-width:320px;margin-top:20px;padding:18px;background:var(--ceo-raised);border:1px solid var(--ceo-border);border-radius:12px}
+.appearance-picker-heading{display:flex;justify-content:space-between;align-items:center}
+.appearance-picker-heading h4{margin:0}.appearance-picker-heading button{font-size:22px;background:transparent;border:0}
+.appearance-wheel{width:180px;height:180px;border-radius:50%;margin:16px auto;position:relative;touch-action:none;cursor:crosshair;background:radial-gradient(circle closest-side in srgb,white 0%,transparent 100%),conic-gradient(from 90deg in srgb,red,#ff0,#0f0,cyan,blue,magenta,red)}
+.appearance-wheel span{position:absolute;width:12px;height:12px;border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px #222;transform:translate(-50%,-50%);pointer-events:none}
+.appearance-picker label{display:block;margin-top:12px;font-size:14px}
+.appearance-picker input{display:block;width:100%;accent-color:var(--ceo-accent)}
+.appearance-picker input[type=text]{margin-top:6px;padding:10px;border:1px solid var(--ceo-border);border-radius:6px;background:var(--ceo-surface);color:var(--ceo-text);font-size:16px}
+
+/* The wheel always offers the full spectrum; brightness adjusts the selected color. */
+.appearance-wheel span { z-index: 1; }

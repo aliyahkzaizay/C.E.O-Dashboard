@@ -3,6 +3,7 @@ import type { Club } from "../hooks/useClubs";
 import { eventAction, listEvents } from "../lib/events";
 import type { CeoEvent, EventAction, EventPage } from "../lib/events";
 import EventForm from "../components/EventForm";
+import CheckInSharePanel from "../components/CheckInSharePanel";
 import "./Events.css";
 
 const PAGE_SIZE = 20;
@@ -11,11 +12,12 @@ type RowActionsProps = {
   event: CeoEvent;
   disabled: boolean;
   onEdit: () => void;
+  onShare: () => void;
   onAction: (action: EventAction, message: string) => void;
 };
 
 /** Keep secondary actions in a keyboard-accessible, light-dismiss popover. */
-function EventRowActions({ event, disabled, onEdit, onAction }: RowActionsProps) {
+function EventRowActions({ event, disabled, onEdit, onShare, onAction }: RowActionsProps) {
   const id = useId();
   const popover = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -39,6 +41,7 @@ function EventRowActions({ event, disabled, onEdit, onAction }: RowActionsProps)
       }}><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
     <div ref={popover} id={id} popover="auto" className="event-action-popover" aria-label={`Actions for ${event.event_name}`}>
       <button type="button" onClick={() => { close(); onEdit(); }}>Edit event</button>
+      <button type="button" onClick={() => { close(); onShare(); }}>Share check-in link</button>
       {canCheckIn && <button type="button" onClick={() => act(event.check_in_open ? "close-checkin" : "open-checkin", event.check_in_open ? "Check-in closed." : "Check-in opened.")}>{event.check_in_open ? "Close check-in" : "Open check-in"}</button>}
       {canCheckIn && !event.check_in_open && <button type="button" onClick={() => act("finalize-attendance", "Attendance finalized.", `Finalize attendance for "${event.event_name}"? Check-in cannot be reopened with the current controls.`)}>Finalize attendance</button>}
       <hr />
@@ -61,6 +64,8 @@ export default function Events({ club, initialEvent }: { club: Club; initialEven
   const [actionError, setActionError] = useState("");
   const actionInFlight = useRef(false);
   const addButton = useRef<HTMLButtonElement>(null);
+  const [sharing, setSharing] = useState<CeoEvent | null>(null);
+  const shareRef = useRef<HTMLElement>(null);
 
   const key = JSON.stringify([offset, attempt, showArchived]);
   const current = result?.key === key ? result : null;
@@ -87,6 +92,32 @@ export default function Events({ club, initialEvent }: { club: Club; initialEven
   }, [club.organization_id, offset, key, showArchived]);
 
   function closeForm() { setAdding(false); setEditing(null); addButton.current?.focus(); }
+
+  // Prefer the freshest copy from the list so cancel/finalize/archive done elsewhere shows up.
+const sharedEvent = sharing ? (data?.items.find(e => e.event_id === sharing.event_id) ?? sharing) : null;
+const sharingId = sharing?.event_id ?? null;
+useEffect(() => {
+  if (!sharingId) return;
+  shareRef.current?.focus();
+  shareRef.current?.scrollIntoView?.({ block: "nearest" });
+}, [sharingId]);
+
+/** Open/close check-in. The panel changes only after the backend confirms; failures reject to the panel. */
+async function setSharedCheckIn(open: boolean) {
+  if (!sharing || actionInFlight.current) return;
+  actionInFlight.current = true;
+  setBusyId(sharing.event_id);
+  setActionError("");
+  try {
+    const settings = await eventAction(club.organization_id, sharing.event_id, open ? "open-checkin" : "close-checkin");
+    setSharing(prev => prev && prev.event_id === settings.event_id ? { ...prev, ...settings } : prev);
+    setNotice(open ? "Check-in opened." : "Check-in closed.");
+    setAttempt(n => n + 1);
+  } finally {
+    actionInFlight.current = false;
+    setBusyId(null);
+  }
+}
 
   async function run(event: CeoEvent, action: EventAction, message: string) {
     if (actionInFlight.current) return;
@@ -125,6 +156,17 @@ export default function Events({ club, initialEvent }: { club: Club; initialEven
       {(adding || editing) && <EventForm key={editing?.event_id ?? "new"} event={editing ?? undefined} organizationId={club.organization_id} onCancel={closeForm} onSaved={() => { const wasEditing = !!editing; closeForm(); setAttempt(n => n + 1); setNotice(wasEditing ? "Event updated." : "Event added."); }} />}
       {notice && <p className="event-notice event-success" role="status">{notice}</p>}
       {actionError && <p className="event-notice event-error" role="alert">{actionError}</p>}
+      {sharedEvent && !sharedEvent.archived_at && <section ref={shareRef} tabIndex={-1} className="event-share" aria-label={`Share check-in for ${sharedEvent.event_name}`}>
+        <CheckInSharePanel
+          token={sharedEvent.check_in_token}
+          eventName={sharedEvent.event_name}
+          isOpen={sharedEvent.check_in_open}
+          canToggle={sharedEvent.status !== "cancelled" && !sharedEvent.attendance_finalized_at}
+          disabledReason={sharedEvent.status === "cancelled" ? "This event was cancelled, so check-in can't be opened." : "Attendance is finalized, so check-in can't be reopened."}
+          onSetOpen={setSharedCheckIn}
+        />
+        <button type="button" className="event-share-done" onClick={() => setSharing(null)}>Done</button>
+      </section>}
 
       <div aria-busy={loading}>
         {loading ? <p className="event-empty" role="status">Loading events…</p>
@@ -142,6 +184,7 @@ export default function Events({ club, initialEvent }: { club: Club; initialEven
                     <td><span className={`event-badge ${e.archived_at ? "archived" : e.status === "cancelled" ? "cancelled" : e.attendance_finalized_at ? "finalized" : e.check_in_open ? "open" : "scheduled"}`}>{statusLabel(e)}</span></td>
                     <td className="event-actions-cell"><EventRowActions event={e} disabled={!!busyId || adding || !!editing}
                       onEdit={() => { setAdding(false); setEditing(e); setNotice(""); }}
+                      onShare={() => { setAdding(false); setEditing(null); setNotice(""); setSharing(e); }}
                       onAction={(action, message) => { void run(e, action, message); }} /></td>
                   </tr>;
                 })}</tbody>

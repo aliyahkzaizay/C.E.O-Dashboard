@@ -1,0 +1,197 @@
+/* Officer share panel: status + open/close, link + copy, preview, QR + download.
+   Classes are prefixed "share-panel" so they can't collide with other files. */
+
+.share-panel {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  max-width: 560px;
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: white;
+  color: #0f172a;
+}
+
+.share-panel-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.share-panel-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.share-panel-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.share-panel-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.share-panel-badge--open {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.share-panel-badge--closed {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.share-panel-field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.share-panel-link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.share-panel-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #0f172a;
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
+.share-panel-input:focus-visible {
+  border-color: #2563eb;
+  outline: 3px solid rgba(37, 99, 235, 0.3);
+}
+
+.share-panel-button,
+.share-panel-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: white;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.share-panel-button:hover:enabled,
+.share-panel-link-button:hover {
+  background: #f1f5f9;
+}
+
+.share-panel-button:focus-visible,
+.share-panel-link-button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.4);
+  outline-offset: 2px;
+}
+
+.share-panel-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.share-panel-button--primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: white;
+}
+
+.share-panel-button--primary:hover:enabled {
+  background: #1d4ed8;
+}
+
+.share-panel-button--danger {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.share-panel-button--danger:hover:enabled {
+  background: #fee2e2;
+}
+
+.share-panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.share-panel-qr {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.share-panel-qr img {
+  display: block;
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+}
+
+.share-panel-qr-placeholder {
+  display: grid;
+  place-items: center;
+  width: 200px;
+  height: 200px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.share-panel-error {
+  padding: 12px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 480px) {
+  .share-panel {
+    padding: 18px;
+  }
+
+  .share-panel-link-row {
+    flex-direction: column;
+  }
+
+  .share-panel-actions > * {
+    flex: 1 1 100%;
+  }
+}

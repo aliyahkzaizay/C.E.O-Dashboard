@@ -1,3 +1,5 @@
+import AppearanceSettings from "../components/AppearanceSettings";
+import { useAppearance } from "../hooks/useAppearance";
 import { useEffect, useState } from "react";
 import CreateClubForm from "../components/CreateClubForm";
 import JoinClubForm from "../components/JoinClubForm";
@@ -25,10 +27,12 @@ type DashboardView = DashboardNavView | "events";
 
 /** Displays Home, club creation, invitation acceptance, or account settings in the shared layout. */
 export default function Dashboard({ userId, email, fullName, accountCreatedAt, onSignOut, isSigningOut, error, pendingInvitation, onClearInvitation }: DashboardProps) {
+  const { appearance, updateAppearance, storageError } = useAppearance(userId);
   const { clubs, isLoading, error: clubsError, retry } = useClubs(userId);
   const { view, clubId: selectedId, navigate } = useDashboardNavigation();
   const [eventToEdit, setEventToEdit] = useState<CeoEvent | null>(null);
   const [memberFormOpen, setMemberFormOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"account" | "appearance" | "team">("account");
   const [focusInvitations, setFocusInvitations] = useState(false);
   const [message, setMessage] = useState("");
   const selectedClub = clubs.find(club => club.organization_id === selectedId) ?? clubs[0];
@@ -59,7 +63,7 @@ export default function Dashboard({ userId, email, fullName, accountCreatedAt, o
         onCreateClub: () => show("create"), onJoinClub: () => show("join"),
         onHome: () => show("home"), onMembers: () => show("members"), onEvents: () => show("events"), onFinance: () => show("finance"), onSettings: () => show("settings"), activeView,
       }}
-      headerActions={activeView === "home" && !isLoading && !clubsError && selectedClub ? <><button className="dashboard-add-member" type="button" onClick={() => { show("members"); setMemberFormOpen(true); }}>+ Add member</button>{selectedClub.access_role === "owner" && <button type="button" onClick={() => { show("settings"); setFocusInvitations(true); }}>Invite officer</button>}</> : undefined}
+      headerActions={activeView === "home" && !isLoading && !clubsError && selectedClub ? <><button className="dashboard-add-member" type="button" onClick={() => { show("members"); setMemberFormOpen(true); }}>+ Add member</button>{selectedClub.access_role === "owner" && <button type="button" onClick={() => { show("settings"); setSettingsTab("team"); setFocusInvitations(true); }}>Invite officer</button>}</> : undefined}
       email={email} onSignOut={onSignOut} isSigningOut={isSigningOut}
     >
       {error && <p role="alert">{error}</p>}
@@ -76,12 +80,35 @@ export default function Dashboard({ userId, email, fullName, accountCreatedAt, o
       ) : activeView === "join" ? (
         <JoinClubForm key={pendingInvitation || "manual"} initialToken={pendingInvitation} email={email} onJoined={joined} onCancel={() => show("home")} />
       ) : activeView === "settings" ? (
-        <>
-          <AccountSettings fullName={fullName} email={email} accountCreatedAt={accountCreatedAt} clubs={clubs} isLoading={isLoading} error={clubsError} onRetry={retry} />
-          {!isLoading && !clubsError && selectedClub?.access_role === "owner" && (
-            <div ref={node => { if (node && focusInvitations) { const input = node.querySelector<HTMLInputElement>("input[type=email]"); input?.focus({ preventScroll: true }); node.scrollIntoView({ block: "start", behavior: "instant" }); } }}><ClubInvitations key={selectedClub.organization_id} organizationId={selectedClub.organization_id} organizationName={selectedClub.organization_name} /></div>
-          )}
-        </>
+        <div className="settings-page">
+          <div className="settings-tabs" role="tablist" aria-label="Settings sections">
+            {(["account", "appearance", "team"] as const).map(tab => (
+              <button key={tab} type="button" role="tab" id={`settings-tab-${tab}`} aria-selected={settingsTab === tab} aria-controls={`settings-panel-${tab}`} tabIndex={settingsTab === tab ? 0 : -1}
+                onClick={() => { setSettingsTab(tab); setFocusInvitations(false); }}
+                onKeyDown={event => {
+                  const tabs = ["account", "appearance", "team"] as const;
+                  const index = tabs.indexOf(tab);
+                  const next = event.key === "ArrowRight" ? tabs[(index + 1) % 3] : event.key === "ArrowLeft" ? tabs[(index + 2) % 3] : event.key === "Home" ? tabs[0] : event.key === "End" ? tabs[2] : null;
+                  if (next) { event.preventDefault(); setSettingsTab(next); setFocusInvitations(false); document.getElementById(`settings-tab-${next}`)?.focus(); }
+                }}>{tab[0].toUpperCase() + tab.slice(1)}</button>
+            ))}
+          </div>
+          <div role="tabpanel" id="settings-panel-account" aria-labelledby="settings-tab-account" hidden={settingsTab !== "account"}>
+            <AccountSettings fullName={fullName} email={email} accountCreatedAt={accountCreatedAt} clubs={clubs} isLoading={isLoading} error={clubsError} onRetry={retry} />
+          </div>
+          <div role="tabpanel" id="settings-panel-appearance" aria-labelledby="settings-tab-appearance" hidden={settingsTab !== "appearance"}>
+            <div className="dashboard-welcome settings-appearance"><AppearanceSettings appearance={appearance} onChange={updateAppearance} storageError={storageError} /></div>
+          </div>
+          <div role="tabpanel" id="settings-panel-team" aria-labelledby="settings-tab-team" hidden={settingsTab !== "team"}>
+            {settingsTab === "team" && (isLoading ? <p role="status">Loading your clubs…</p> : clubsError ? <section className="dashboard-welcome"><p role="alert">{clubsError}</p><button className="club-retry" onClick={retry}>Retry</button></section> : !selectedClub ? (
+              <section className="dashboard-welcome"><h2>Your team</h2><p>Create a club or accept an invitation to see its team settings.</p></section>
+            ) : selectedClub.access_role === "owner" ? (
+              <div ref={node => { if (node && focusInvitations) node.querySelector<HTMLInputElement>("input[type=email]")?.focus({ preventScroll: true }); }}><ClubInvitations key={selectedClub.organization_id} organizationId={selectedClub.organization_id} organizationName={selectedClub.organization_name} /></div>
+            ) : (
+              <section className="dashboard-welcome"><h2>{selectedClub.organization_name}</h2><p>Your club owner manages officer invitations.</p></section>
+            ))}
+          </div>
+        </div>
       ) : !isLoading && !clubsError && selectedClub ? (
         <>
           {message && <p role="status">{message}</p>}
