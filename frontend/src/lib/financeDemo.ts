@@ -1,7 +1,7 @@
 /** Synthetic preview records only; never used as a database fallback. Amounts are cents. */
-export type FinanceRelation = { eventId: string; relatedKind?: "meeting" | "other"; relatedLabel?: string };
+export type FinanceRelation = { eventId: string; eventName?: string; relatedKind?: "meeting" | "other"; relatedLabel?: string };
 export type FinanceTransaction = FinanceRelation & { id: string; date: string; description: string; category: string; kind: "income" | "expense"; cents: number; eventId: string };
-export type PurchaseReport = FinanceRelation & { id: string; title: string; filename: string; date: string; uploader: string; eventId: string; expenseId: string; notes: string };
+export type PurchaseReport = FinanceRelation & { id: string; title: string; filename: string; date: string; uploader: string; eventId: string; notes: string };
 export const demoEvents = [{ id: "workshop", name: "Workshop" }, { id: "welcome", name: "Welcome meeting" }];
 export const demoTransactions: FinanceTransaction[] = [
  { id: "1", date: "2026-06-12", description: "Club supplies", category: "Supplies", kind: "expense", cents: 5000, eventId: "" },
@@ -15,12 +15,12 @@ export const demoTransactions: FinanceTransaction[] = [
  { id: "9", date: "2026-09-01", description: "Fundraiser", category: "Fundraising", kind: "income", cents: 100000, eventId: "" },
  { id: "10", date: "2026-11-06", description: "Donations", category: "Donations", kind: "income", cents: 20000, eventId: "" },
 ];
-export const demoReports: PurchaseReport[] = [{ id: "r1", title: "Workshop supplies", filename: "supplies.pdf", date: "2026-11-08", uploader: "Aliyah", eventId: "workshop", expenseId: "7", notes: "Sample report; no file attached." }];
+export const demoReports: PurchaseReport[] = [{ id: "r1", title: "Workshop supplies", filename: "supplies.pdf", date: "2026-11-08", uploader: "Aliyah", eventId: "workshop", notes: "Sample report; no file attached." }];
 /** Format exact preview cents as US dollars. Currency settings are not connected yet. */
 export function money(cents: number) { return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100); }
 export function eventName(id: string) { return demoEvents.find(event => event.id === id)?.name ?? "General club"; }
 
 /** Display a named meeting or other association without treating it as a stored event. */
 export function relationLabel(row: FinanceRelation) {
- return row.eventId ? eventName(row.eventId) : row.relatedLabel ? `${row.relatedKind === "meeting" ? "Meeting" : "Other"}: ${row.relatedLabel}` : "General club";
+ return row.eventId ? (row.eventName || eventName(row.eventId)) : row.relatedLabel ? `${row.relatedKind === "meeting" ? "Meeting" : "Other"}: ${row.relatedLabel}` : "General club";
 }
