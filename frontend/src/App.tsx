@@ -1,9 +1,10 @@
 import { clearInvitationFromUrl, readPendingInvitation, rememberInvitation } from "./lib/invitations";
 import { getSupabase } from "./lib/supabase";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import Dashboard from "./pages/Dashboard";
+import WelcomeScreen from "./components/WelcomeScreen";
 import "./App.css";
 
 /**
@@ -13,6 +14,12 @@ import "./App.css";
  * @returns The account screen's JSX.
  */
 function App() {
+  // Capture signup confirmation before Supabase consumes the URL fragment.
+  const welcomeIntent = useRef<"signup" | "signin" | null>(
+    new URLSearchParams(window.location.hash.slice(1)).get("type") === "signup" ? "signup" : null
+  );
+  const [welcomeMode, setWelcomeMode] = useState<"signup" | "signin" | null>(null);
+  const finishWelcome = useCallback(() => setWelcomeMode(null), []);
   const [pendingInvitation, setPendingInvitation] = useState(readPendingInvitation);
   const [isSignUp, setIsSignUp] = useState(true);
   const [fullName, setFullName] = useState("");
@@ -54,6 +61,11 @@ function App() {
     try {
       const { data } = getSupabase().auth.onAuthStateChange(
         (_event, currentSession) => {
+          if (currentSession && welcomeIntent.current) {
+            setWelcomeMode(welcomeIntent.current);
+            welcomeIntent.current = null;
+          }
+          if (!currentSession) setWelcomeMode(null);
           setSession(currentSession);
           setIsCheckingSession(false);
         }
@@ -94,6 +106,7 @@ function App() {
           return;
         }
 
+        welcomeIntent.current = "signup";
         const { data, error: authError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -106,12 +119,14 @@ function App() {
 
         if (authError) throw authError;
 
+        if (!data.session) welcomeIntent.current = null;
         setMessage(
           data.session
             ? "You are signed in!"
             : "Check your email for a confirmation link. If you already have an account, sign in."
         );
       } else {
+        welcomeIntent.current = "signin";
         const { error: authError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
@@ -124,6 +139,7 @@ function App() {
 
       setPassword("");
     } catch (err) {
+      welcomeIntent.current = null;
       setError(
         err instanceof Error ? err.message : "Something went wrong. Try again."
       );
@@ -167,6 +183,8 @@ function App() {
 
   if (!isCheckingSession && session) {
     return (
+      <>
+      <div inert={welcomeMode !== null} aria-hidden={welcomeMode !== null ? true : undefined}>
       <Dashboard
         key={session.user.id}
         pendingInvitation={pendingInvitation}
@@ -179,6 +197,13 @@ function App() {
         isSigningOut={isLoading}
         error={error}
       />
+      </div>
+      {welcomeMode && <WelcomeScreen
+        mode={welcomeMode}
+        fullName={typeof session.user.user_metadata.full_name === "string" ? session.user.user_metadata.full_name : ""}
+        onComplete={finishWelcome}
+      />}
+      </>
     );
   }
 

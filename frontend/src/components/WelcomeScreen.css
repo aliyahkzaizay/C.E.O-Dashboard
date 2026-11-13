@@ -1,0 +1,38 @@
+.welcome-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f5f6f8;
+  color: #192334;
+  text-align: center;
+  opacity: 1;
+  transition: opacity 500ms ease;
+}
+.welcome-screen--leaving { opacity: 0; }
+.welcome-screen__brand {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 64px);
+  font-weight: 650;
+  letter-spacing: -1.8px;
+  background: linear-gradient(110deg, #192334 38%, #2563eb 47%, #bfdbfe 50%, #2563eb 53%, #192334 62%);
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: welcome-light-sweep 2s cubic-bezier(.25,.6,.35,1) both;
+}
+.welcome-screen__brand span { font-weight: 400; }
+.welcome-screen__subtitle { margin: 13px 0 0; color: #647084; font-size: 16px; }
+.welcome-screen__accent { width: 38px; height: 4px; border-radius: 3px; background: #2563eb; margin: 26px auto; }
+.welcome-screen__greeting { margin: 0; font-size: 24px; animation: welcome-message 450ms 1950ms ease both; }
+@keyframes welcome-light-sweep { from { background-position: 100% 50%; } to { background-position: 0% 50%; } }
+@keyframes welcome-message { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@media (max-width: 420px) { .welcome-screen__brand span { display: block; margin-top: 8px; } }
+@media (prefers-reduced-motion: reduce) {
+  .welcome-screen { transition: none; }
+  .welcome-screen__brand { animation: none; background: none; color: #192334; }
+  .welcome-screen__greeting { animation: none; }
+}
