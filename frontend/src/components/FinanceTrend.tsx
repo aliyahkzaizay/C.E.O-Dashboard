@@ -1,13 +1,15 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { demoEvents, money, type FinanceTransaction } from "../lib/financeDemo";
+import { money, type FinanceTransaction } from "../lib/finance";
 
 type Detail = { key: string; title: string; subtitle?: string; rows: [string, string][]; change: string; x: number; y: number };
 const colors = ["var(--ceo-accent-text)", "var(--ceo-purple)"];
-/** Preview finance trends with pointer, keyboard, and touch details; no database reads. */
+/** Display finance trends with pointer, keyboard, and touch details; no database reads. */
 export default function FinanceTrend({ transactions }: { transactions: FinanceTransaction[] }) {
  const [view, setView] = useState<"monthly" | "events">("monthly");
  const [months, setMonths] = useState(6);
- const [selected, setSelected] = useState(demoEvents.map(event => event.id));
+ const events = [...new Map(transactions.filter(row=>row.eventId).map(row=>[row.eventId,{id:row.eventId,name:row.eventName || "Linked event"}])).values()];
+ const [excluded, setExcluded] = useState<string[]>([]);
+ const selected = events.filter(event=>!excluded.includes(event.id)).map(event=>event.id);
  const [width, setWidth] = useState(650);
  const [detail, setDetail] = useState<Detail | null>(null);
  const [visible, setVisible] = useState(false);
@@ -25,14 +27,17 @@ export default function FinanceTrend({ transactions }: { transactions: FinanceTr
  function hide() { pinned.current = false; setVisible(false); }
  function changeView(next: "monthly" | "events") { hide(); setView(next); setRevision(n => n+1); }
  function reveal(next: Detail) { setDetail(next); setVisible(true); }
- const start = `2026-${String(12-months).padStart(2,"0")}-01`;
- const end = "2026-12-01";
- const labels = ["Jun", "Jul", "Aug", "Sep", "Oct", "Nov"].slice(6-months);
+ const now = new Date();
+ const dates = Array.from({length: months}, (_, i)=>new Date(now.getFullYear(),now.getMonth()-months+1+i,1));
+ const isoMonth = (date: Date)=>`${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}`;
+ const start = `${isoMonth(dates[0])}-01`;
+ const end = `${isoMonth(new Date(now.getFullYear(),now.getMonth()+1,1))}-01`;
+ const labels = dates.map(date=>date.toLocaleDateString("en-US",{month:"short",year:"2-digit"}));
  const monthly = labels.map((label,i) => {
-  const rows = transactions.filter(row => row.date.startsWith(`2026-${String(12-months+i).padStart(2,"0")}`));
+  const rows = transactions.filter(row => row.date.startsWith(isoMonth(dates[i])));
   return { label, income: rows.filter(row=>row.kind === "income").reduce((sum,row)=>sum+row.cents,0), expense: rows.filter(row=>row.kind === "expense").reduce((sum,row)=>sum+row.cents,0), categories: [...new Set(rows.filter(row=>row.kind === "income").map(row=>row.category))].join(" · ") };
  });
- const lines = demoEvents.filter(event=>selected.includes(event.id)).map(event=>{
+ const lines = events.filter(event=>selected.includes(event.id)).map(event=>{
   let total=0;
   const points=transactions.filter(row=>row.kind === "expense" && row.eventId === event.id && row.date < end).toSorted((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id)).map(row=>{total+=row.cents;return {...row,total};});
   const opening=points.filter(row=>row.date<start).at(-1)?.total ?? 0;
@@ -45,17 +50,17 @@ export default function FinanceTrend({ transactions }: { transactions: FinanceTr
  const dateX=(date:string)=>left+12+(Date.parse(date)-Date.parse(start))/(Date.parse(end)-Date.parse(start))*(right-left-24);
  const barWidth=Math.min(22,(right-left)/months*.3);
  const signed=(cents:number)=>`${cents>=0?"+":"−"}${money(Math.abs(cents))}`;
- const hits: Detail[] = view === "monthly" ? monthly.map((row,i)=>({key:row.label,title:`${row.label} 2026`,subtitle:row.categories || undefined,rows:[["Income",money(row.income)],["Expenses",money(row.expense)]],change:`${signed(row.income-row.expense)} net change`,x:monthlyX(i),y:y(Math.max(row.income,row.expense))})) : lines.flatMap(line=>line.points.map(row=>({key:row.id,title:line.name,subtitle:`${row.date} · ${row.description}`,rows:[["This purchase",money(row.cents)],["Spent so far",money(row.total)]],change:`+${money(row.cents)} more spent`,x:dateX(row.date),y:y(row.total)})));
+ const hits: Detail[] = view === "monthly" ? monthly.map((row,i)=>({key:row.label,title:row.label,subtitle:row.categories || undefined,rows:[["Income",money(row.income)],["Expenses",money(row.expense)]],change:`${signed(row.income-row.expense)} net change`,x:monthlyX(i),y:y(Math.max(row.income,row.expense))})) : lines.flatMap(line=>line.points.map(row=>({key:row.id,title:line.name,subtitle:`${row.date} · ${row.description}`,rows:[["This purchase",money(row.cents)],["Spent so far",money(row.total)]],change:`+${money(row.cents)} more spent`,x:dateX(row.date),y:y(row.total)})));
  const tipWidth=Math.min(235,Math.max(170,width-12));
- return <section className="finance-panel"><div className="finance-heading"><div><h2>Finance trends</h2><p>{view === "monthly" ? "Income and expenses" : "Cumulative event spending by purchase date"} · USD</p></div><label>Demo period<select value={months} onChange={e=>{hide();setMonths(Number(e.target.value));setRevision(n=>n+1);}}><option value={6}>Jun–Nov 2026</option><option value={3}>Sep–Nov 2026</option></select></label></div>
+ return <section className="finance-panel"><div className="finance-heading"><div><h2>Finance trends</h2><p>{view === "monthly" ? "Income and expenses" : "Cumulative event spending by purchase date"} · USD</p></div><label>Period<select value={months} onChange={e=>{hide();setMonths(Number(e.target.value));setRevision(n=>n+1);}}><option value={6}>Last 6 months</option><option value={3}>Last 3 months</option></select></label></div>
  <div className={`finance-tabs finance-trend-tabs ${view === "events" ? "is-events" : ""}`}><span aria-hidden="true" className="finance-tab-indicator" /><button type="button" aria-pressed={view === "monthly"} onClick={()=>changeView("monthly")}>Monthly totals</button><button type="button" aria-pressed={view === "events"} onClick={()=>changeView("events")}>By event</button></div>
- <div className="finance-legend">{view === "monthly" ? <><span><i style={{background:"#15806b"}} />Income</span><span><i style={{background:"var(--ceo-accent-text)"}} />Expenses</span></> : demoEvents.map((event,i)=><label key={event.id}><input type="checkbox" checked={selected.includes(event.id)} onChange={e=>{hide();setSelected(ids=>e.target.checked?[...ids,event.id]:ids.filter(id=>id!==event.id));}} /><i style={{background:colors[i]}} />{event.name}</label>)}</div>
+ <div className="finance-legend">{view === "monthly" ? <><span><i style={{background:"#15806b"}} />Income</span><span><i style={{background:"var(--ceo-accent-text)"}} />Expenses</span></> : events.map((event,i)=><label key={event.id}><input type="checkbox" checked={selected.includes(event.id)} onChange={e=>{hide();setExcluded(ids=>e.target.checked?ids.filter(id=>id!==event.id):[...ids,event.id]);}} /><i style={{background:colors[i % colors.length]}} />{event.name}</label>)}</div>
  <div className="finance-interactive-chart" ref={container} onKeyDown={e=>{if(e.key === "Escape")hide();}} onPointerDown={e=>{if(!(e.target as Element).closest("button"))hide();}}>
  <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden="true">
  {[0,.5,1].map(f=><g key={f}><line x1={left} x2={right} y1={y(ceiling*f)} y2={y(ceiling*f)} stroke="var(--ceo-border)" /><text x={left-7} y={y(ceiling*f)+4} textAnchor="end">${Math.round(ceiling*f/100)}</text></g>)}
  {labels.map((label,i)=>width<420 && months===6 && i%2===1 ? null : <text key={label} x={monthlyX(i)} y="282" textAnchor="middle">{label}</text>)}
  <g key={`${view}-${months}-${revision}`} className={revision ? "finance-chart-enter" : undefined}>
- {view === "monthly" ? monthly.map((row,i)=><g key={row.label} opacity={visible && detail && detail.key!==row.label ? .55 : 1}><rect x={monthlyX(i)-barWidth-2} y={y(row.income)} width={barWidth} height={bottom-y(row.income)} rx="4" fill="#15806b" /><rect x={monthlyX(i)+2} y={y(row.expense)} width={barWidth} height={bottom-y(row.expense)} rx="4" fill="var(--ceo-accent-text)" /></g>) : lines.map(line=>{const color=colors[demoEvents.findIndex(e=>e.id===line.id)];return <g key={line.id}><polyline points={[[dateX(start),y(line.opening)],...line.points.map(row=>[dateX(row.date),y(row.total)])].map(point=>point.join(",")).join(" ")} fill="none" stroke={color} strokeWidth="2.5" />{line.points.map(row=><circle key={row.id} cx={dateX(row.date)} cy={y(row.total)} r={visible && detail?.key===row.id ? 7 : 4.5} fill="var(--ceo-surface)" stroke={color} strokeWidth="2.5" />)}</g>;})}
+ {view === "monthly" ? monthly.map((row,i)=><g key={row.label} opacity={visible && detail && detail.key!==row.label ? .55 : 1}><rect x={monthlyX(i)-barWidth-2} y={y(row.income)} width={barWidth} height={bottom-y(row.income)} rx="4" fill="#15806b" /><rect x={monthlyX(i)+2} y={y(row.expense)} width={barWidth} height={bottom-y(row.expense)} rx="4" fill="var(--ceo-accent-text)" /></g>) : lines.map(line=>{const color=colors[events.findIndex(e=>e.id===line.id) % colors.length];return <g key={line.id}><polyline points={[[dateX(start),y(line.opening)],...line.points.map(row=>[dateX(row.date),y(row.total)])].map(point=>point.join(",")).join(" ")} fill="none" stroke={color} strokeWidth="2.5" />{line.points.map(row=><circle key={row.id} cx={dateX(row.date)} cy={y(row.total)} r={visible && detail?.key===row.id ? 7 : 4.5} fill="var(--ceo-surface)" stroke={color} strokeWidth="2.5" />)}</g>;})}
  </g></svg>
  {hits.map(hit=><button key={hit.key} type="button" className="finance-chart-hit" style={{left:hit.x-18,top:view === "monthly" ? hit.y : hit.y-18,width:36,height:view === "monthly" ? Math.max(36,bottom-hit.y) : 36}} aria-label={`${hit.title}${hit.subtitle?`, ${hit.subtitle}`:""}. ${hit.rows.map(row=>row.join(": ")).join(". ")}. ${hit.change}`} aria-describedby={visible && detail?.key===hit.key ? tooltipId : undefined} onPointerEnter={e=>{if(e.pointerType!=="touch")reveal(hit);}} onPointerLeave={()=>{if(!pinned.current)setVisible(false);}} onFocus={()=>reveal(hit)} onBlur={hide} onPointerDown={e=>{pinned.current=e.pointerType === "touch";}} onClick={()=>reveal(hit)} />)}
  <div id={tooltipId} role="tooltip" aria-hidden={!visible} className={`finance-chart-tooltip ${visible ? "is-visible" : ""}`} style={{width:tipWidth,left:Math.max(0,Math.min(width-tipWidth,(detail?.x??0)-tipWidth/2)),top:Math.max(2,(detail?.y??0)-175)}}>{detail && <><strong>{detail.title}</strong>{detail.subtitle && <p>{detail.subtitle}</p>}{detail.rows.map(([label,value])=><div key={label}><span>{label}</span><b>{value}</b></div>)}<footer>{detail.change}</footer></>}</div>

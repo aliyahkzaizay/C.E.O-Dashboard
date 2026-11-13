@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { Club } from "../hooks/useClubs";
 import { eventAction, listEvents } from "../lib/events";
 import type { CeoEvent, EventAction, EventPage } from "../lib/events";
+import EventDetails from "../components/EventDetails";
 import EventForm from "../components/EventForm";
 import CheckInSharePanel from "../components/CheckInSharePanel";
 import "./Events.css";
@@ -57,6 +58,7 @@ export default function Events({ club, initialEvent }: { club: Club; initialEven
   const [attempt, setAttempt] = useState(0);
   const [showArchived, setShowArchived] = useState(false);
   const [result, setResult] = useState<{ key: string; data?: EventPage; error?: string } | null>(null);
+  const [viewing, setViewing] = useState<CeoEvent | null>(null);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<CeoEvent | null>(() => initialEvent?.organization_id === club.organization_id && !initialEvent.archived_at ? initialEvent : null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -144,6 +146,7 @@ async function setSharedCheckIn(open: boolean) {
   }
 
   return <div className="events-page">
+    {viewing && <EventDetails key={viewing.event_id} event={data?.items.find(item=>item.event_id===viewing.event_id) ?? viewing} organizationId={club.organization_id} onClose={()=>setViewing(null)} />}
     <section className="events-card" aria-labelledby="events-heading">
       <div className="events-heading">
         <div><h2 id="events-heading">Club events</h2><p>{club.organization_name}</p></div>
@@ -178,7 +181,7 @@ async function setSharedCheckIn(open: boolean) {
                 <thead><tr><th scope="col">Event</th><th scope="col">Date &amp; time</th><th scope="col">Type</th><th scope="col">Status</th><th scope="col" className="event-actions-cell"><span className="events-sr-only">Actions</span></th></tr></thead>
                 <tbody>{data.items.map(e => {
                   return <tr key={e.event_id}>
-                    <td className="event-name">{e.event_name}</td>
+                    <td className="event-name"><button type="button" className="event-title-link" onClick={()=>setViewing(e)}>{e.event_name}</button></td>
                     <td className="event-date"><time dateTime={e.starts_at}>{new Date(e.starts_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}<small>{new Date(e.starts_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" })}</small></time></td>
                     <td>{e.event_type ?? "—"}</td>
                     <td><span className={`event-badge ${e.archived_at ? "archived" : e.status === "cancelled" ? "cancelled" : e.attendance_finalized_at ? "finalized" : e.check_in_open ? "open" : "scheduled"}`}>{statusLabel(e)}</span></td>

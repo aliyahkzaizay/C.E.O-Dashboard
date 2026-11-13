@@ -1,0 +1,31 @@
+.event-details{width:min(620px,calc(100vw - 32px));max-height:85dvh;overflow:auto;padding:24px;border:1px solid var(--ceo-border);border-radius:16px;background:var(--ceo-surface);color:var(--ceo-text)}
+.event-details::backdrop{background:rgb(15 23 42 / 40%)}
+.event-details header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.event-details header h2{font-size:22px;margin:0;overflow-wrap:anywhere}
+.event-details header button{font-size:24px}
+.event-details p,.event-details small{color:var(--ceo-muted);line-height:1.6}
+.event-details-description{white-space:pre-wrap}
+.event-details section{margin-top:24px}
+.event-document-list{list-style:none;margin:0;padding:0}
+.event-document-list li{padding:16px 0;border-bottom:1px solid var(--ceo-border);overflow-wrap:anywhere}
+.event-document-list small{display:block;margin:6px 0;font-size:12px}
+.events-page .event-title-link,.event-details .event-document-title{border:0;background:transparent;padding:0;text-align:left;font-weight:600;color:var(--ceo-text);cursor:pointer}
+.events-page .event-title-link:hover,.event-details .event-document-title:hover{color:#2563eb;background:transparent}
+.event-details button:focus-visible{outline:2px solid var(--ceo-accent);outline-offset:3px}
+
+.event-details{box-shadow:0 24px 80px rgb(15 23 42 / 20%)}
+.event-details[open]{animation:event-details-in 220ms cubic-bezier(.2,.8,.2,1)}
+.event-details[open]::backdrop{animation:event-backdrop-in 220ms ease}
+.event-details.is-closing{animation:event-details-out 160ms ease forwards;pointer-events:none}
+.event-details.is-closing::backdrop{animation:event-backdrop-out 160ms ease forwards}
+.event-details header button{display:grid;place-items:center;padding:0;width:40px;height:40px;border:0;border-radius:50%;flex-shrink:0}
+.event-details header button:hover{background:var(--ceo-raised)}
+.event-document-list li:last-child{border-bottom:0}
+.event-document-content{animation:event-details-in 180ms ease}
+.event-details button{transition:background-color 160ms ease,color 160ms ease,border-color 160ms ease}
+@keyframes event-details-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes event-details-out{to{opacity:0;transform:translateY(5px) scale(.99)}}
+@keyframes event-backdrop-in{from{opacity:0}to{opacity:1}}
+@keyframes event-backdrop-out{to{opacity:0}}
+@media(max-width:600px){.event-details{padding:20px}.event-details header h2{font-size:20px}}
+@media(prefers-reduced-motion:reduce){.event-details,.event-details::backdrop,.event-details *{animation:none!important;transition:none!important}}
