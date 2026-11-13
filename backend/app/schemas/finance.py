@@ -89,4 +89,5 @@ class ReportResponse(ReportInput):
     file_size_bytes: int
     object_path: str
     uploaded_by: UUID
+    uploaded_by_name: str | None = None
     created_at: datetime

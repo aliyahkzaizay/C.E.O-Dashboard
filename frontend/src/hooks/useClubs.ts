@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getSupabase } from "../lib/supabase";
 
-export type Club = { organization_id: string; organization_name: string; access_role: "owner" | "admin"; matching_method: "email" | "external_id"; member_identifier_label: string };
+export type Club = { organization_id: string; organization_name: string; access_role: "owner" | "admin"; can_edit_finances?: boolean; matching_method: "email" | "external_id"; member_identifier_label: string };
 
 /** Loads the current user's club memberships. Database policies enforce access. */
 export function useClubs(userId: string) {
@@ -21,7 +21,7 @@ export function useClubs(userId: string) {
         const client = getSupabase();
         const { data: memberships, error: membershipError } = await client
           .from("organization_users")
-          .select("organization_id, access_role")
+          .select("organization_id, access_role, can_edit_finances")
           .eq("user_id", userId);
         if (membershipError) throw membershipError;
         const ids = [...new Set((memberships ?? []).map(row => row.organization_id as string))];
@@ -44,7 +44,7 @@ export function useClubs(userId: string) {
           const membership = memberships?.find(row => row.organization_id === club.organization_id);
           if (membership?.access_role !== "owner" && membership?.access_role !== "admin") throw new Error("Unexpected club access role.");
           if (club.matching_method !== "email" && club.matching_method !== "external_id") throw new Error("Unexpected matching method.");
-          return { ...club, matching_method: club.matching_method as "email" | "external_id", access_role: membership.access_role };
+          return { ...club, matching_method: club.matching_method as "email" | "external_id", access_role: membership.access_role, can_edit_finances: membership.can_edit_finances === true };
         }));
       } catch {
         if (active) setError("We couldn't load your clubs. Please try again.");
